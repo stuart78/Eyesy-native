@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  eyesy-simulator:
+    build: .
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key}
+      - HOST=0.0.0.0
+      - PORT=5001
+    volumes:
+      # Optional: mount temp directory for uploaded modes
+      - /tmp/eyesy_uploaded_modes:/tmp/eyesy_uploaded_modes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Nginx reverse proxy for production
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Uncomment for SSL certificates:
+      # - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - eyesy-simulator
+    restart: unless-stopped
+    profiles:
+      - with-nginx

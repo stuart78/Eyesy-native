@@ -1,0 +1,256 @@
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: 'Courier New', monospace;
+    background: #1a1a1a;
+    color: #00ff00;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+h1 {
+    text-align: center;
+    color: #00ffff;
+    text-shadow: 0 0 10px #00ffff;
+    margin-bottom: 30px;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.panel {
+    background: #2a2a2a;
+    border: 2px solid #00ff00;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.panel h2 {
+    margin-top: 0;
+    color: #00ffff;
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+#canvas {
+    width: 100%;
+    height: auto;
+    background: #000;
+    border: 2px solid #00ff00;
+    image-rendering: pixelated;
+    max-height: 400px;
+}
+
+.mode-selector {
+    margin-bottom: 15px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.mode-selector label {
+    font-weight: bold;
+    min-width: 50px;
+}
+
+.mode-selector select {
+    flex: 1;
+    background: #1a1a1a;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    padding: 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    min-width: 200px;
+}
+
+.file-selector {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #1a1a1a;
+    border: 1px solid #00ffff;
+    border-radius: 4px;
+}
+
+.file-selector label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #00ffff;
+}
+
+.file-selector .selected-file {
+    display: block;
+    margin: 10px 0;
+    font-size: 12px;
+    color: #888;
+    font-style: italic;
+}
+
+.file-selector .selected-file.has-file {
+    color: #00ff00;
+    font-style: normal;
+}
+
+.file-selector button {
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
+
+.controls {
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+}
+
+.knob-control {
+    text-align: center;
+}
+
+.knob-control label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.knob-control input[type="range"] {
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+.knob-control .value {
+    font-size: 11px;
+    color: #00ffff;
+    font-weight: bold;
+}
+
+.buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+button {
+    background: #00ff00;
+    color: #000;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+button:hover {
+    background: #00ffff;
+    box-shadow: 0 0 10px #00ffff;
+}
+
+button:disabled {
+    background: #555;
+    color: #888;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+#status {
+    padding: 12px;
+    background: #1a1a1a;
+    border: 1px solid #00ff00;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 15px;
+    min-height: 20px;
+}
+
+.status-error {
+    color: #ff0000 !important;
+    border-color: #ff0000 !important;
+}
+
+.status-success {
+    color: #00ff00 !important;
+    border-color: #00ff00 !important;
+}
+
+.status-info {
+    color: #00ffff !important;
+    border-color: #00ffff !important;
+}
+
+.info {
+    padding: 12px;
+    background: #2a2a2a;
+    border: 1px solid #00ffff;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #00ffff;
+    line-height: 1.4;
+}
+
+.stats {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+}
+
+#fps {
+    color: #00ffff;
+}
+
+#connection {
+    font-size: 16px;
+    color: #ff0000;
+}
+
+#connection.connected {
+    color: #00ff00;
+}
+
+/* Responsive design */
+@media (max-width: 900px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+
+    .controls {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .mode-selector {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mode-selector select {
+        min-width: auto;
+    }
+}
+
+@media (max-width: 600px) {
+    .controls {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .buttons {
+        flex-direction: column;
+    }
+
+    body {
+        padding: 10px;
+    }
+}
