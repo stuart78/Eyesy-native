@@ -193,6 +193,16 @@ def handle_set_audio(data):
     except Exception as e:
         emit('status', {'message': f'Error setting audio: {str(e)}', 'type': 'error'})
 
+@socketio.on('audio_data')
+def handle_audio_data(data):
+    """Receive raw audio data from the browser for visualization"""
+    try:
+        audio_samples = data.get('samples', [])
+        if audio_samples:
+            engine.set_audio_data(audio_samples)
+    except Exception as e:
+        print(f"Error processing audio data: {str(e)}")
+
 def render_loop():
     """Main rendering loop that runs in a separate thread"""
     global is_running

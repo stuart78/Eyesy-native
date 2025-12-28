@@ -64,6 +64,42 @@
                     <button id="refreshModesBtn">🔄 Refresh Modes</button>
                 </div>
 
+                <div class="audio-controls">
+                    <h3>Audio Simulation</h3>
+                    <div class="audio-row">
+                        <label for="audioType">Type:</label>
+                        <select id="audioType">
+                            <option value="silence">Silence</option>
+                            <option value="sine">Sine Wave</option>
+                            <option value="noise">White Noise</option>
+                            <option value="beat">Beat/Kick</option>
+                            <option value="file">Audio File</option>
+                        </select>
+                    </div>
+                    <div class="audio-row audio-file-row" id="audioFileRow" style="display: none;">
+                        <label for="audioFileInput">File:</label>
+                        <input type="file" id="audioFileInput" accept="audio/*" style="display: none;">
+                        <button type="button" id="browseAudioBtn" class="browse-btn">Browse...</button>
+                        <span id="audioFileName" class="audio-file-name">No file selected</span>
+                    </div>
+                    <div class="audio-row">
+                        <label for="audioLevel">Level:</label>
+                        <input type="range" id="audioLevel" min="0" max="100" value="50">
+                        <span id="audioLevelValue">0.50</span>
+                    </div>
+                    <div class="audio-row">
+                        <label for="audioFreq">Frequency:</label>
+                        <input type="range" id="audioFreq" min="20" max="2000" value="440">
+                        <span id="audioFreqValue">440 Hz</span>
+                    </div>
+                    <div class="audio-row audio-toggle">
+                        <label for="playAudioToggle">Play in browser:</label>
+                        <input type="checkbox" id="playAudioToggle">
+                        <span class="toggle-hint">Hear the simulated audio</span>
+                    </div>
+                    <button id="applyAudioBtn">Apply Audio Settings</button>
+                </div>
+
                 <div id="status">Connecting to server...</div>
 
                 <div class="info">

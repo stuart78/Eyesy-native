@@ -12,6 +12,18 @@ class EyesySimulator {
         this.lastRenderedFrame = -1;  // Track last successfully rendered frame
         this.knobThrottleTimers = {};  // Throttle knob updates
 
+        // Audio playback
+        this.audioContext = null;
+        this.audioOscillator = null;
+        this.audioGain = null;
+        this.noiseNode = null;
+        this.beatInterval = null;
+        this.isAudioPlaying = false;
+        this.audioFileBuffer = null;
+        this.audioFileSource = null;
+        this.audioAnalyser = null;
+        this.audioDataInterval = null;
+
         this.initializeSocket();
         this.setupControls();
     }
@@ -104,6 +116,301 @@ class EyesySimulator {
         document.getElementById('loadFileBtn').addEventListener('click', () => {
             this.loadSelectedFile();
         });
+
+        // Setup audio controls
+        this.setupAudioControls();
+    }
+
+    setupAudioControls() {
+        const audioLevel = document.getElementById('audioLevel');
+        const audioLevelValue = document.getElementById('audioLevelValue');
+        const audioFreq = document.getElementById('audioFreq');
+        const audioFreqValue = document.getElementById('audioFreqValue');
+        const applyAudioBtn = document.getElementById('applyAudioBtn');
+
+        // Update displayed values on slider change and update audio if playing
+        audioLevel.addEventListener('input', () => {
+            audioLevelValue.textContent = (audioLevel.value / 100).toFixed(2);
+            // Update gain in real-time if audio is playing
+            if (this.isAudioPlaying && this.audioGain) {
+                this.audioGain.gain.value = (audioLevel.value / 100) * 0.3;
+            }
+        });
+
+        audioFreq.addEventListener('input', () => {
+            audioFreqValue.textContent = `${audioFreq.value} Hz`;
+            // Update frequency in real-time if oscillator is playing
+            if (this.isAudioPlaying && this.audioOscillator) {
+                this.audioOscillator.frequency.value = parseInt(audioFreq.value);
+            }
+        });
+
+        // Apply audio settings button
+        applyAudioBtn.addEventListener('click', () => {
+            this.applyAudioSettings();
+        });
+
+        // Also apply on type change for immediate feedback
+        document.getElementById('audioType').addEventListener('change', () => {
+            this.applyAudioSettings();
+        });
+
+        // Audio playback toggle
+        const playAudioToggle = document.getElementById('playAudioToggle');
+        if (playAudioToggle) {
+            playAudioToggle.addEventListener('change', () => {
+                this.toggleAudioPlayback();
+            });
+        }
+
+        // Audio file controls
+        const audioFileInput = document.getElementById('audioFileInput');
+        const browseAudioBtn = document.getElementById('browseAudioBtn');
+        const audioFileRow = document.getElementById('audioFileRow');
+
+        // Show/hide file row based on audio type
+        document.getElementById('audioType').addEventListener('change', (e) => {
+            if (e.target.value === 'file') {
+                audioFileRow.style.display = 'flex';
+            } else {
+                audioFileRow.style.display = 'none';
+            }
+        });
+
+        browseAudioBtn.addEventListener('click', () => {
+            audioFileInput.click();
+        });
+
+        audioFileInput.addEventListener('change', (e) => {
+            this.handleAudioFileSelection(e);
+        });
+    }
+
+    handleAudioFileSelection(event) {
+        const file = event.target.files[0];
+        const audioFileName = document.getElementById('audioFileName');
+
+        if (file) {
+            audioFileName.textContent = file.name;
+            audioFileName.classList.add('has-file');
+
+            // Load the audio file
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    this.initAudioContext();
+                    this.audioFileBuffer = await this.audioContext.decodeAudioData(e.target.result);
+                    this.setStatus(`Audio file "${file.name}" loaded successfully`, 'success');
+                } catch (err) {
+                    this.setStatus(`Error loading audio file: ${err.message}`, 'error');
+                    this.audioFileBuffer = null;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            audioFileName.textContent = 'No file selected';
+            audioFileName.classList.remove('has-file');
+            this.audioFileBuffer = null;
+        }
+    }
+
+    applyAudioSettings() {
+        if (this.socket && this.socket.connected) {
+            const audioType = document.getElementById('audioType').value;
+            const audioLevel = document.getElementById('audioLevel').value / 100;
+            const audioFreq = parseInt(document.getElementById('audioFreq').value);
+
+            this.socket.emit('set_audio', {
+                type: audioType,
+                level: audioLevel,
+                frequency: audioFreq
+            });
+
+            // Update browser audio playback if enabled
+            const playAudio = document.getElementById('playAudioToggle')?.checked;
+            if (playAudio) {
+                this.updateAudioPlayback(audioType, audioLevel, audioFreq);
+            }
+
+            this.setStatus(`Audio: ${audioType} (level: ${audioLevel.toFixed(2)}, freq: ${audioFreq}Hz)`, 'info');
+        }
+    }
+
+    initAudioContext() {
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+    }
+
+    stopAudioPlayback() {
+        if (this.audioOscillator) {
+            this.audioOscillator.stop();
+            this.audioOscillator.disconnect();
+            this.audioOscillator = null;
+        }
+        if (this.audioGain) {
+            this.audioGain.disconnect();
+            this.audioGain = null;
+        }
+        if (this.noiseNode) {
+            this.noiseNode.stop();
+            this.noiseNode.disconnect();
+            this.noiseNode = null;
+        }
+        if (this.beatInterval) {
+            clearInterval(this.beatInterval);
+            this.beatInterval = null;
+        }
+        if (this.audioFileSource) {
+            this.audioFileSource.stop();
+            this.audioFileSource.disconnect();
+            this.audioFileSource = null;
+        }
+        if (this.audioAnalyser) {
+            this.audioAnalyser.disconnect();
+            this.audioAnalyser = null;
+        }
+        if (this.audioDataInterval) {
+            clearInterval(this.audioDataInterval);
+            this.audioDataInterval = null;
+        }
+        this.isAudioPlaying = false;
+    }
+
+    createNoiseNode(audioContext) {
+        // Create white noise using a buffer
+        const bufferSize = audioContext.sampleRate * 2; // 2 seconds of noise
+        const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+
+        const noiseNode = audioContext.createBufferSource();
+        noiseNode.buffer = noiseBuffer;
+        noiseNode.loop = true;
+        return noiseNode;
+    }
+
+    updateAudioPlayback(audioType, level, frequency) {
+        this.stopAudioPlayback();
+
+        if (audioType === 'silence' || level === 0) {
+            return;
+        }
+
+        this.initAudioContext();
+        const ctx = this.audioContext;
+
+        // Create gain node for volume control
+        this.audioGain = ctx.createGain();
+        this.audioGain.gain.value = level * 0.3; // Scale down to avoid being too loud
+        this.audioGain.connect(ctx.destination);
+
+        if (audioType === 'sine') {
+            // Sine wave oscillator
+            this.audioOscillator = ctx.createOscillator();
+            this.audioOscillator.type = 'sine';
+            this.audioOscillator.frequency.value = frequency;
+            this.audioOscillator.connect(this.audioGain);
+            this.audioOscillator.start();
+
+        } else if (audioType === 'noise') {
+            // White noise
+            this.noiseNode = this.createNoiseNode(ctx);
+            this.noiseNode.connect(this.audioGain);
+            this.noiseNode.start();
+
+        } else if (audioType === 'beat') {
+            // Beat/kick - short burst every ~500ms
+            const playBeat = () => {
+                const osc = ctx.createOscillator();
+                const beatGain = ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.value = 80; // Low kick frequency
+
+                beatGain.gain.setValueAtTime(level * 0.5, ctx.currentTime);
+                beatGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+
+                osc.connect(beatGain);
+                beatGain.connect(ctx.destination);
+
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.15);
+            };
+
+            playBeat(); // Play immediately
+            this.beatInterval = setInterval(playBeat, 500); // Repeat every 500ms
+
+        } else if (audioType === 'file') {
+            // Play loaded audio file
+            if (!this.audioFileBuffer) {
+                this.setStatus('No audio file loaded. Please select a file first.', 'error');
+                return;
+            }
+
+            // Create buffer source for the audio file
+            this.audioFileSource = ctx.createBufferSource();
+            this.audioFileSource.buffer = this.audioFileBuffer;
+            this.audioFileSource.loop = true;
+
+            // Create analyser for extracting audio data
+            this.audioAnalyser = ctx.createAnalyser();
+            this.audioAnalyser.fftSize = 2048;  // Gives us 1024 time-domain samples
+
+            // Connect: source -> analyser -> gain -> destination
+            this.audioFileSource.connect(this.audioAnalyser);
+            this.audioAnalyser.connect(this.audioGain);
+            this.audioFileSource.start(0);
+
+            // Start sending audio data to backend for visualization
+            this.startAudioDataStream();
+
+            this.setStatus('Playing audio file (streaming to visuals)...', 'info');
+        }
+
+        this.isAudioPlaying = true;
+    }
+
+    toggleAudioPlayback() {
+        const playAudio = document.getElementById('playAudioToggle')?.checked;
+
+        if (playAudio) {
+            const audioType = document.getElementById('audioType').value;
+            const audioLevel = document.getElementById('audioLevel').value / 100;
+            const audioFreq = parseInt(document.getElementById('audioFreq').value);
+            this.updateAudioPlayback(audioType, audioLevel, audioFreq);
+        } else {
+            this.stopAudioPlayback();
+        }
+    }
+
+    startAudioDataStream() {
+        // Stop any existing stream
+        if (this.audioDataInterval) {
+            clearInterval(this.audioDataInterval);
+        }
+
+        // Send audio data to backend at ~30fps (matching render rate)
+        const dataArray = new Uint8Array(this.audioAnalyser.frequencyBinCount);
+
+        this.audioDataInterval = setInterval(() => {
+            if (this.audioAnalyser && this.socket && this.socket.connected) {
+                // Get time-domain data (waveform)
+                this.audioAnalyser.getByteTimeDomainData(dataArray);
+
+                // Convert Uint8Array to regular array and send to backend
+                // Values are 0-255 where 128 is silence
+                const samples = Array.from(dataArray);
+
+                this.socket.emit('audio_data', { samples: samples });
+            }
+        }, 33);  // ~30fps
     }
 
     sendKnobChange(knobNum, value) {

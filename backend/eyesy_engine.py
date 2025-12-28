@@ -269,8 +269,9 @@ class EyesyEngine:
             # Update knob values in the mode and etc object
             self.update_knobs_in_mode()
 
-            # Generate audio data for this frame
-            self.etc.generate_audio_data()
+            # Generate audio data for this frame (unless using external audio file)
+            if self.etc.audio_type != 'file':
+                self.etc.generate_audio_data()
 
             # Run setup if this is the first frame
             if not self.is_initialized and self.setup_func:
@@ -297,12 +298,31 @@ class EyesyEngine:
             return None, error_msg
 
     def set_audio_data(self, audio_data):
-        """Set audio data for the mode to use"""
-        if isinstance(audio_data, list):
-            self.etc.audio_in = audio_data[:1024]  # Limit to 1024 samples
+        """Set audio data for the mode to use
+
+        Audio data comes from Web Audio API's getByteTimeDomainData
+        which gives values 0-255 where 128 is silence.
+        We convert to signed values centered at 0.
+        """
+        if isinstance(audio_data, list) and len(audio_data) > 0:
+            # Convert from 0-255 (128 = silence) to signed range
+            # Scale to roughly match what modes expect (16-bit audio style)
+            converted = []
+            for sample in audio_data[:1024]:
+                # Convert 0-255 to -128 to 127, then scale to larger range
+                signed = (sample - 128) * 256  # Now -32768 to 32512
+                converted.append(signed)
+
+            self.etc.audio_in = converted
             # For stereo, duplicate mono for now
             self.etc.audio_left = self.etc.audio_in[:]
             self.etc.audio_right = self.etc.audio_in[:]
+
+            # Calculate trigger based on audio level
+            if self.etc.audio_in:
+                current_level = abs(max(self.etc.audio_in, key=abs)) / 32768.0
+                self.etc.audio_trig = current_level > 0.1  # Lower threshold for file audio
+
             # Update trig aliases
             self.etc.trig = self.etc.audio_trig
 
@@ -310,13 +330,22 @@ class EyesyEngine:
         """Configure audio simulation
 
         Args:
-            audio_type: "sine", "noise", "beat", or "silence"
+            audio_type: "sine", "noise", "beat", "silence", or "file"
             level: Audio level 0.0 to 1.0
             frequency: Frequency in Hz (for sine wave)
         """
         self.etc.audio_type = audio_type
         self.etc.audio_level = max(0.0, min(1.0, level))
         self.etc.audio_frequency = frequency
+
+        # When switching to file mode, we'll receive data via set_audio_data
+        # When switching away from file mode, clear any stale file audio
+        if audio_type != 'file':
+            # Reset to silence if no audio simulation
+            if audio_type == 'silence':
+                self.etc.audio_in = [0.0] * 1024
+                self.etc.audio_left = [0.0] * 1024
+                self.etc.audio_right = [0.0] * 1024
 
     def get_status(self):
         """Get current engine status"""
