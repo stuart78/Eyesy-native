@@ -1,6 +1,8 @@
 # Flash Mode
 # Trigger mode that responds to audio/manual triggers
 
+import pygame
+
 frame_count = 0
 flash_intensity = 0.0
 

@@ -1,6 +1,7 @@
 # Spiral Mode
 # Animated spiral of colored circles
 
+import pygame
 import math
 
 # Global variables for animation

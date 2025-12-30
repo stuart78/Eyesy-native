@@ -1,6 +1,8 @@
 # Simple Circle Mode
 # Basic test mode that draws a circle controlled by knobs
 
+import pygame
+
 def setup(screen, etc):
     """Setup function called once when mode loads"""
     pass

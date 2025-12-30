@@ -85,6 +85,14 @@ x = int(knob1 * 1280)  # NameError on real Eyesy!
 
 The simulator injects knob values as both module globals AND etc attributes for backwards compatibility, but the real Eyesy hardware only provides them via the `etc` object. Always use `etc.knob1` through `etc.knob5` to ensure modes work in both environments.
 
+**Always import pygame at the top of your mode:**
+
+```python
+import pygame  # Required for pygame.draw functions on real hardware
+```
+
+The real Eyesy hardware requires an explicit `import pygame` statement. The simulator injects pygame as a module global, but real hardware does not.
+
 ### Key API Available to Scripts (via `etc` object)
 - `etc.knob1` through `etc.knob5` - float values 0.0 to 1.0
 - `etc.audio_in` - mono audio buffer (list of samples)

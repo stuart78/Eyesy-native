@@ -7,6 +7,7 @@
 # Knob 5 controls color mode (0 = greyscale, 0.33 = rainbow, 0.66 = synthwave, 1 = metashape)
 # Features "meta-shapes" - concentric ring patterns that create sparse areas
 
+import pygame
 import random
 import math
 import colorsys

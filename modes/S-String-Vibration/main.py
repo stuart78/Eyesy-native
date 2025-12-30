@@ -23,6 +23,7 @@
 #   0.8 = warm cream to hot pink (#f5e6ad to #f13c77)
 #   0.9+ = pastel trio (#f2f3e2 to #b2e5f8 to #f4b3ef)
 
+import pygame
 import math
 import random
 import colorsys
