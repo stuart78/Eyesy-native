@@ -11,20 +11,28 @@ import base64
 from pygame_shim import pygame, Surface
 
 class EtcObject:
-    """Mock etc object that contains audio data and metadata"""
+    """Mock etc object that contains audio data and metadata.
+
+    This simulates the Eyesy hardware's 'etc' object that gets passed to modes.
+    See: https://github.com/critterandguitari/EYESY_OS/blob/master/engines/python/eyesy.py
+    """
     def __init__(self):
-        self.audio_in = [0.0] * 1024  # Mock audio buffer
-        self.audio_left = [0.0] * 1024
-        self.audio_right = [0.0] * 1024
+        # Audio buffers (100 samples like real Eyesy)
+        self.audio_in = [0.0] * 100  # Mono audio buffer
+        self.audio_left = [0.0] * 100  # Left channel (alias for audio_in)
+        self.audio_right = [0.0] * 100  # Right channel
+        self.audio_in_r = [0.0] * 100  # Right channel (real Eyesy naming)
+        self.audio_peak = 0.0  # Peak audio level
+        self.audio_peak_r = 0.0  # Right channel peak
         self.audio_trig = False
         self.mode = "unknown"
         self.xres = 1280
         self.yres = 720
 
-        # Audio simulation parameters
+        # Audio simulation parameters (simulator-specific)
         self.audio_level = 0.0  # 0.0 to 1.0
         self.audio_frequency = 440.0  # Hz for sine wave
-        self.audio_type = "sine"  # "sine", "noise", "silence"
+        self.audio_type = "sine"  # "sine", "noise", "silence", "beat", "file"
         self.frame_count = 0
 
         # Color palettes (mock values)
@@ -32,22 +40,32 @@ class EtcObject:
         self.color_picker_fg = self._color_picker_fg
         self.color_picker = self._color_picker  # Generic color picker
 
-        # Common Eyesy variables
+        # Knob values (0.0 to 1.0) - accessed as etc.knob1, etc.knob2, etc.
         self.knob1 = 0.5
         self.knob2 = 0.5
         self.knob3 = 0.5
         self.knob4 = 0.5
         self.knob5 = 0.5
 
-        # Additional Eyesy API variables
+        # MIDI variables
         self.midi_note_new = False
         self.midi_note = 60
         self.midi_velocity = 127
+        self.midi_notes = [0] * 128  # All MIDI note states
+        self.midi_clk = 0  # MIDI clock counter
+
+        # Color state
         self.bg_color = (0, 0, 0)
         self.fg_color = (255, 255, 255)
 
-        # Trigger variables (aliases for audio_trig)
-        self.trig = False  # Common shorthand for audio_trig
+        # Trigger variables
+        self.trig = False  # Alias for audio_trig
+        self.audio_trig = False
+
+        # System state
+        self.auto_clear = True  # Whether to auto-clear screen between frames
+        self.fps = 30  # Current FPS
+        self.screen = None  # Reference to screen surface (set by engine)
 
     def _color_picker_bg(self, value):
         """Mock background color picker - returns RGB tuple based on value"""
@@ -98,19 +116,23 @@ class EtcObject:
         return self._color_picker_bg(value)
 
     def generate_audio_data(self):
-        """Generate simulated audio data based on current settings"""
+        """Generate simulated audio data based on current settings.
+
+        Real Eyesy uses 100-sample buffers, so we match that.
+        """
         import math
         import random
 
         self.frame_count += 1
+        buffer_size = 100  # Match real Eyesy buffer size
 
         if self.audio_type == "silence":
             # Silent audio
-            self.audio_in = [0.0] * 1024
+            self.audio_in = [0.0] * buffer_size
         elif self.audio_type == "sine":
             # Generate sine wave
             sample_rate = 44100
-            samples_per_frame = 1024
+            samples_per_frame = buffer_size
 
             audio_data = []
             for i in range(samples_per_frame):
@@ -124,12 +146,12 @@ class EtcObject:
         elif self.audio_type == "noise":
             # Generate white noise
             amplitude = self.audio_level * 32767
-            self.audio_in = [random.uniform(-amplitude, amplitude) for _ in range(1024)]
+            self.audio_in = [random.uniform(-amplitude, amplitude) for _ in range(buffer_size)]
         elif self.audio_type == "beat":
             # Generate rhythmic beat pattern
             beat_frequency = 2.0  # 2 beats per second
             sample_rate = 44100
-            samples_per_frame = 1024
+            samples_per_frame = buffer_size
 
             audio_data = []
             for i in range(samples_per_frame):
@@ -150,13 +172,19 @@ class EtcObject:
 
             self.audio_in = audio_data
 
-        # Copy to stereo channels
+        # Copy to stereo channels (all aliases)
         self.audio_left = self.audio_in[:]
         self.audio_right = self.audio_in[:]
+        self.audio_in_r = self.audio_in[:]  # Real Eyesy naming
+
+        # Calculate peak levels
+        if self.audio_in:
+            self.audio_peak = abs(max(self.audio_in, key=abs)) / 32767.0
+            self.audio_peak_r = self.audio_peak  # Same for mono simulation
 
         # Update trigger based on audio level
         if self.audio_in:
-            current_level = abs(max(self.audio_in, key=abs)) / 32767.0
+            current_level = self.audio_peak
             self.audio_trig = current_level > 0.3  # Trigger threshold
         else:
             self.audio_trig = False
@@ -303,27 +331,39 @@ class EyesyEngine:
         Audio data comes from Web Audio API's getByteTimeDomainData
         which gives values 0-255 where 128 is silence.
         We convert to signed values centered at 0.
+
+        Real Eyesy uses 100-sample buffers, so we downsample if needed.
         """
         if isinstance(audio_data, list) and len(audio_data) > 0:
+            buffer_size = 100  # Match real Eyesy buffer size
+
             # Convert from 0-255 (128 = silence) to signed range
             # Scale to roughly match what modes expect (16-bit audio style)
+            # Downsample to 100 samples
+            step = max(1, len(audio_data) // buffer_size)
             converted = []
-            for sample in audio_data[:1024]:
-                # Convert 0-255 to -128 to 127, then scale to larger range
-                signed = (sample - 128) * 256  # Now -32768 to 32512
-                converted.append(signed)
+            for i in range(buffer_size):
+                idx = i * step
+                if idx < len(audio_data):
+                    # Convert 0-255 to -128 to 127, then scale to larger range
+                    signed = (audio_data[idx] - 128) * 256  # Now -32768 to 32512
+                    converted.append(signed)
+                else:
+                    converted.append(0.0)
 
             self.etc.audio_in = converted
             # For stereo, duplicate mono for now
             self.etc.audio_left = self.etc.audio_in[:]
             self.etc.audio_right = self.etc.audio_in[:]
+            self.etc.audio_in_r = self.etc.audio_in[:]  # Real Eyesy naming
 
-            # Calculate trigger based on audio level
+            # Calculate peak levels and trigger
             if self.etc.audio_in:
-                current_level = abs(max(self.etc.audio_in, key=abs)) / 32768.0
-                self.etc.audio_trig = current_level > 0.1  # Lower threshold for file audio
+                self.etc.audio_peak = abs(max(self.etc.audio_in, key=abs)) / 32768.0
+                self.etc.audio_peak_r = self.etc.audio_peak
+                self.etc.audio_trig = self.etc.audio_peak > 0.1  # Lower threshold for file audio
 
-            # Update trig aliases
+            # Update trig alias
             self.etc.trig = self.etc.audio_trig
 
     def set_audio_simulation(self, audio_type="sine", level=0.5, frequency=440.0):
@@ -338,14 +378,17 @@ class EyesyEngine:
         self.etc.audio_level = max(0.0, min(1.0, level))
         self.etc.audio_frequency = frequency
 
+        buffer_size = 100  # Match real Eyesy buffer size
+
         # When switching to file mode, we'll receive data via set_audio_data
         # When switching away from file mode, clear any stale file audio
         if audio_type != 'file':
             # Reset to silence if no audio simulation
             if audio_type == 'silence':
-                self.etc.audio_in = [0.0] * 1024
-                self.etc.audio_left = [0.0] * 1024
-                self.etc.audio_right = [0.0] * 1024
+                self.etc.audio_in = [0.0] * buffer_size
+                self.etc.audio_left = [0.0] * buffer_size
+                self.etc.audio_right = [0.0] * buffer_size
+                self.etc.audio_in_r = [0.0] * buffer_size
 
     def get_status(self):
         """Get current engine status"""

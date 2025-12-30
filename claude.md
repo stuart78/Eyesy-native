@@ -55,30 +55,54 @@ def draw(screen, etc):
     """Called every frame"""
     # Clear screen
     screen.fill((0, 0, 0))
-    
-    # Access knob values (global variables, 0.0 to 1.0)
-    x = int(knob1 * 1280)
-    y = int(knob2 * 720)
-    
+
+    # Access knob values from etc object (0.0 to 1.0)
+    # IMPORTANT: Always use etc.knob1, etc.knob2, etc. - NOT bare globals!
+    x = int(etc.knob1 * 1280)
+    y = int(etc.knob2 * 720)
+
     # Access audio data from etc object
     # etc.audio_in - audio samples (list/array)
     # etc.audio_left, etc.audio_right - stereo
     # etc.audio_trig - trigger event boolean
-    
+
     # Draw using pygame
     pygame.draw.circle(screen, (255, 0, 0), (x, y), 50)
 ```
 
-### Key Globals/API Available to Scripts
-- `knob1`, `knob2`, `knob3`, `knob4`, `knob5` - float values 0.0 to 1.0
+### IMPORTANT: Eyesy Hardware Compatibility
+
+**Always access knob values via the `etc` object, not as bare globals:**
+
+```python
+# CORRECT - works on real Eyesy hardware AND simulator
+x = int(etc.knob1 * 1280)
+color_value = etc.knob4 * 255
+
+# WRONG - only works in simulator, fails on real hardware
+x = int(knob1 * 1280)  # NameError on real Eyesy!
+```
+
+The simulator injects knob values as both module globals AND etc attributes for backwards compatibility, but the real Eyesy hardware only provides them via the `etc` object. Always use `etc.knob1` through `etc.knob5` to ensure modes work in both environments.
+
+### Key API Available to Scripts (via `etc` object)
+- `etc.knob1` through `etc.knob5` - float values 0.0 to 1.0
+- `etc.audio_in` - mono audio buffer (list of samples)
+- `etc.audio_left` - left channel audio
+- `etc.audio_right` - right channel audio
+- `etc.audio_trig` - trigger boolean (True when audio exceeds threshold)
+- `etc.trig` - alias for audio_trig
+- `etc.mode` - current mode name
+- `etc.xres`, `etc.yres` - screen resolution (1280, 720)
+- `etc.bg_color` - current background color tuple
+- `etc.fg_color` - current foreground color tuple
+- `etc.color_picker(val)` - get foreground color from palette (val 0.0-1.0)
+- `etc.color_picker_bg(val)` - get background color from palette (val 0.0-1.0)
+- `etc.auto_clear` - whether screen auto-clears between frames
+- `etc.midi_note_new` - True when new MIDI note received
+- `etc.midi_note` - last MIDI note number (0-127)
+- `etc.midi_velocity` - last MIDI velocity (0-127)
 - `screen` - pygame Surface object (1280x720)
-- `etc` - object containing:
-  - `etc.audio_in` - mono audio buffer
-  - `etc.audio_left` - left channel
-  - `etc.audio_right` - right channel  
-  - `etc.audio_trig` - trigger boolean
-  - `etc.mode` - current mode name
-  - Other metadata
 - `pygame` module for drawing
 
 ### pygame Drawing Functions Needed
