@@ -609,6 +609,13 @@ def draw(screen, etc):
     if grid is None:
         setup(screen, etc)
 
+    # Get knob values from etc object (Eyesy hardware API)
+    knob1 = etc.knob1
+    knob2 = etc.knob2
+    knob3 = etc.knob3
+    knob4 = etc.knob4
+    knob5 = etc.knob5
+
     # Animation controlled by knob2
     # knob2 = 0: no animation
     # knob2 = 1: update many cells per frame

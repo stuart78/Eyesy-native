@@ -213,7 +213,13 @@ def draw(screen, etc):
     # Clear screen to black
     screen.fill((0, 0, 0))
 
-    # Get knob values
+    # Get knob values from etc object (Eyesy hardware API)
+    knob1 = etc.knob1
+    knob2 = etc.knob2
+    knob3 = etc.knob3
+    knob4 = etc.knob4
+    knob5 = etc.knob5
+
     # Knob 1: Number of strings (8 to 64)
     num_strings = int(8 + knob1 * 56)
 
@@ -372,7 +378,7 @@ def draw(screen, etc):
 
         # Apply smoothing based on knob2 (0 = max smooth, 1 = no smooth)
         # At knob2=0: 4 iterations, at knob2=1: 0 iterations
-        smooth_iterations = int((1.0 - knob2) * 4)
+        smooth_iterations = int((1.0 - etc.knob2) * 4)
         if smooth_iterations > 0:
             displaced_points = smooth_points(displaced_points, iterations=smooth_iterations)
             rest_points = smooth_points(rest_points, iterations=smooth_iterations)

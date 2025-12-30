@@ -18,12 +18,12 @@ def draw(screen, etc):
     # Clear screen to black
     screen.fill((0, 0, 0))
 
-    # Parameters from knobs
-    num_circles = int(knob1 * 20) + 3      # Number of circles (3-23)
-    radius = knob2 * 200 + 50              # Spiral radius (50-250)
-    size = int(knob3 * 30) + 5             # Circle size (5-35)
-    speed = knob4 * 0.2                    # Animation speed
-    hue_shift = knob5 * 360                # Color hue shift
+    # Parameters from knobs (Eyesy hardware API)
+    num_circles = int(etc.knob1 * 20) + 3      # Number of circles (3-23)
+    radius = etc.knob2 * 200 + 50              # Spiral radius (50-250)
+    size = int(etc.knob3 * 30) + 5             # Circle size (5-35)
+    speed = etc.knob4 * 0.2                    # Animation speed
+    hue_shift = etc.knob5 * 360                # Color hue shift
 
     # Update animation
     angle += speed

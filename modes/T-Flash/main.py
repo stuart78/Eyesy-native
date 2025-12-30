@@ -17,13 +17,13 @@ def draw(screen, etc):
     frame_count += 1
 
     # Use knob5 as manual trigger (when > 0.8)
-    trigger = knob5 > 0.8 or etc.audio_trig
+    trigger = etc.knob5 > 0.8 or etc.audio_trig
 
-    # Flash parameters
-    decay_rate = knob1 * 0.3 + 0.05  # Flash decay speed
-    flash_size = knob2 * 300 + 50    # Flash size
-    color_hue = knob3 * 360          # Flash color
-    pattern = int(knob4 * 4)         # Flash pattern (0-3)
+    # Flash parameters (Eyesy hardware API)
+    decay_rate = etc.knob1 * 0.3 + 0.05  # Flash decay speed
+    flash_size = etc.knob2 * 300 + 50    # Flash size
+    color_hue = etc.knob3 * 360          # Flash color
+    pattern = int(etc.knob4 * 4)         # Flash pattern (0-3)
 
     # Update flash intensity
     if trigger:
