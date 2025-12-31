@@ -11,10 +11,33 @@ body {
     margin: 0 auto;
 }
 
-h1 {
-    text-align: left;
-    color: #ffffff;
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 30px;
+}
+
+.top-bar h1 {
+    margin: 0;
+    color: #ffffff;
+}
+
+.top-nav {
+    display: flex;
+    gap: 20px;
+}
+
+.top-nav a {
+    color: #999;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.top-nav a:hover {
+    color: #fff;
 }
 
 .layout {
@@ -46,11 +69,14 @@ h1 {
     border: 1px solid #555;
     width: 28px;
     height: 28px;
-    padding: 0;
+    padding: 4px 0 0 0;
     font-size: 18px;
-    line-height: 1;
+    line-height: 28px;
     cursor: pointer;
     border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .collapse-btn:hover {
@@ -279,11 +305,14 @@ button:disabled {
     border: 1px solid #555;
     width: 28px;
     height: 28px;
-    padding: 0;
+    padding: 4px 0 0 0;
     font-size: 14px;
-    line-height: 1;
+    line-height: 28px;
     cursor: pointer;
     border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .audio-play-btn:hover {
@@ -465,4 +494,131 @@ button:disabled {
     body {
         padding: 10px;
     }
+}
+
+/* Slide-in Panels (Help, About) */
+.help-panel,
+.about-panel {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.75);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 1000;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.help-panel.open,
+.about-panel.open {
+    right: 0;
+}
+
+.help-header,
+.about-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #444;
+}
+
+.help-header h2,
+.about-header h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 18px;
+}
+
+.help-close-btn,
+.about-close-btn {
+    background: transparent;
+    color: #999;
+    border: 1px solid #555;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 20px;
+    line-height: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.help-close-btn:hover,
+.about-close-btn:hover {
+    background: #444;
+    color: #fff;
+}
+
+.help-content,
+.about-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    color: #ccc;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.help-content h3,
+.about-content h3 {
+    color: #fff;
+    font-size: 16px;
+    margin: 20px 0 10px 0;
+}
+
+.help-content h3:first-child,
+.about-content h3:first-child {
+    margin-top: 0;
+}
+
+.help-content p,
+.about-content p {
+    margin: 0 0 15px 0;
+}
+
+.help-content ul,
+.help-content ol,
+.about-content ul,
+.about-content ol {
+    margin: 0 0 15px 0;
+    padding-left: 20px;
+}
+
+.help-content li,
+.about-content li {
+    margin-bottom: 8px;
+}
+
+.help-content code,
+.about-content code {
+    background: #1a1a1a;
+    padding: 2px 6px;
+    font-family: monospace;
+    font-size: 13px;
+    color: #e0e0e0;
+}
+
+.help-content strong,
+.about-content strong {
+    color: #fff;
+}
+
+.help-content a,
+.about-content a {
+    color: #999;
+    text-decoration: none;
+    border-bottom: 1px solid #555;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.help-content a:hover,
+.about-content a:hover {
+    color: #fff;
+    border-color: #fff;
 }

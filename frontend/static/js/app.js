@@ -139,6 +139,56 @@ class EyesySimulator {
 
         // Setup preview size display
         this.setupPreviewSizeDisplay();
+
+        // Setup help panel
+        this.setupHelpPanel();
+    }
+
+    setupHelpPanel() {
+        const helpLink = document.getElementById('helpLink');
+        const helpPanel = document.getElementById('helpPanel');
+        const helpCloseBtn = document.getElementById('helpCloseBtn');
+
+        if (helpLink && helpPanel) {
+            helpLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                helpPanel.classList.add('open');
+            });
+
+            helpCloseBtn.addEventListener('click', () => {
+                helpPanel.classList.remove('open');
+            });
+
+            // Close on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && helpPanel.classList.contains('open')) {
+                    helpPanel.classList.remove('open');
+                }
+            });
+        }
+
+        // About panel
+        const aboutLink = document.querySelector('.top-nav a[href="#about"]');
+        const aboutPanel = document.getElementById('aboutPanel');
+        const aboutCloseBtn = document.getElementById('aboutCloseBtn');
+
+        if (aboutLink && aboutPanel) {
+            aboutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                aboutPanel.classList.add('open');
+            });
+
+            aboutCloseBtn.addEventListener('click', () => {
+                aboutPanel.classList.remove('open');
+            });
+
+            // Close on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && aboutPanel.classList.contains('open')) {
+                    aboutPanel.classList.remove('open');
+                }
+            });
+        }
     }
 
     setupPanelCollapse() {

@@ -11,7 +11,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>EYESY Simulator</h1>
+        <header class="top-bar">
+            <h1>EYESY Simulator</h1>
+            <nav class="top-nav">
+                <a href="#about">About</a>
+                <a href="#" id="helpLink">Help</a>
+            </nav>
+        </header>
 
         <div class="layout">
             <div class="panel controls-panel" id="controlsPanel">
@@ -94,7 +100,7 @@
                         <div class="audio-row audio-toggle">
                             <label for="playAudioToggle">Play in browser:</label>
                             <input type="checkbox" id="playAudioToggle" checked>
-                            <span class="toggle-hint">Hear the simulated audio</span>
+                            <span class="toggle-hint">Hear the audio in browser</span>
                         </div>
                         <div class="audio-row">
                             <label></label>
@@ -152,6 +158,67 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- About Panel -->
+    <div class="about-panel" id="aboutPanel">
+        <div class="about-header">
+            <h2>About</h2>
+            <button class="about-close-btn" id="aboutCloseBtn">&times;</button>
+        </div>
+        <div class="about-content">
+            <h3>EYESY Simulator</h3>
+            <p>A web-based simulator for the <a href="https://www.critterandguitari.com/eyesy" target="_blank" rel="noopener">Critter &amp; Guitari EYESY</a> video synthesizer.</p>
+            <p>Develop and test EYESY modes without the physical hardware. Run actual Python scripts locally with real-time visualization.</p>
+
+            <h3>Author</h3>
+            <p>Created by Stuart Frederich-Smith<br>
+            <a href="https://signalfunctionset.com" target="_blank" rel="noopener">signalfunctionset.com</a></p>
+
+            <h3>License</h3>
+            <p>&copy; 2025 Stuart Frederich-Smith. All rights reserved.</p>
+        </div>
+    </div>
+
+    <!-- Help Panel -->
+    <div class="help-panel" id="helpPanel">
+        <div class="help-header">
+            <h2>Help</h2>
+            <button class="help-close-btn" id="helpCloseBtn">×</button>
+        </div>
+        <div class="help-content">
+            <h3>Getting Started</h3>
+            <p>The EYESY Simulator runs Python visual scripts designed for the Critter & Guitari EYESY hardware synthesizer.</p>
+
+            <h3>Loading a Mode</h3>
+            <ol>
+                <li>Select a mode from the dropdown menu</li>
+                <li>Click "Load Mode" to load the script</li>
+                <li>Click "Start" to begin rendering</li>
+            </ol>
+
+            <h3>Controls</h3>
+            <p>Use the 5 knobs below the preview to control visual parameters. Each mode responds to knobs differently.</p>
+
+            <h3>Audio</h3>
+            <p>Many modes respond to audio input. Configure audio in the Audio section:</p>
+            <ul>
+                <li><strong>Silence</strong> - No audio input</li>
+                <li><strong>Sine Wave</strong> - Pure tone at specified frequency</li>
+                <li><strong>White Noise</strong> - Random noise</li>
+                <li><strong>Beat/Kick</strong> - Rhythmic beat pattern</li>
+                <li><strong>Audio File</strong> - Upload your own audio</li>
+                <li><strong>Internet Radio</strong> - Stream from online stations</li>
+            </ul>
+
+            <h3>Custom Modes</h3>
+            <p>You can load your own Python scripts using "Browse main.py". Scripts should follow the EYESY mode format with <code>setup()</code> and <code>draw()</code> functions.</p>
+
+            <h3>Keyboard Shortcuts</h3>
+            <ul>
+                <li><strong>Esc</strong> - Close this help panel</li>
+            </ul>
         </div>
     </div>
 
