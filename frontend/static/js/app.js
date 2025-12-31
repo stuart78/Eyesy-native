@@ -18,12 +18,15 @@ class EyesySimulator {
         this.audioGain = null;
         this.noiseNode = null;
         this.beatInterval = null;
+        this.beatGainNode = null;
         this.isAudioPlaying = false;
         this.isAudioSimulationOn = false;
         this.audioFileBuffer = null;
         this.audioFileSource = null;
         this.audioAnalyser = null;
         this.audioDataInterval = null;
+        this.audioStreamElement = null;
+        this.audioStreamSource = null;
 
         this.initializeSocket();
         this.setupControls();
@@ -223,13 +226,41 @@ class EyesySimulator {
         const audioFileInput = document.getElementById('audioFileInput');
         const browseAudioBtn = document.getElementById('browseAudioBtn');
         const audioFileRow = document.getElementById('audioFileRow');
+        const audioStreamRow = document.getElementById('audioStreamRow');
+        const audioStreamUrlRow = document.getElementById('audioStreamUrlRow');
+        const audioStreamPreset = document.getElementById('audioStreamPreset');
 
-        // Show/hide file row based on audio type
+        // Show/hide file/stream row based on audio type
+        const audioLevelRow = audioLevel.closest('.audio-row');
+        const audioFreqRow = audioFreq.closest('.audio-row');
+
         document.getElementById('audioType').addEventListener('change', (e) => {
-            if (e.target.value === 'file') {
-                audioFileRow.style.display = 'flex';
-            } else {
-                audioFileRow.style.display = 'none';
+            const type = e.target.value;
+            const isStream = type === 'stream';
+            const isFile = type === 'file';
+            // Frequency only applies to sine wave
+            const freqDisabled = type !== 'sine';
+            // Level doesn't apply to stream or file (file has its own volume)
+            const levelDisabled = isStream || isFile;
+
+            audioFileRow.style.display = isFile ? 'flex' : 'none';
+            audioStreamRow.style.display = isStream ? 'flex' : 'none';
+            // Show custom URL row only if stream selected and preset is "Custom URL..."
+            audioStreamUrlRow.style.display = (isStream && !audioStreamPreset.value) ? 'flex' : 'none';
+
+            // Disable controls that don't apply to current type
+            audioLevel.disabled = levelDisabled;
+            audioFreq.disabled = freqDisabled;
+            audioLevelRow.style.opacity = levelDisabled ? '0.5' : '1';
+            audioFreqRow.style.opacity = freqDisabled ? '0.5' : '1';
+        });
+
+        // Show/hide custom URL input based on preset selection
+        audioStreamPreset.addEventListener('change', (e) => {
+            audioStreamUrlRow.style.display = e.target.value === '' ? 'flex' : 'none';
+            // Auto-switch stream when a preset station is selected
+            if (e.target.value && this.isAudioSimulationOn) {
+                this.applyAudioSettings();
             }
         });
 
@@ -276,8 +307,12 @@ class EyesySimulator {
             const audioLevel = document.getElementById('audioLevel').value / 100;
             const audioFreq = parseInt(document.getElementById('audioFreq').value);
 
+            // For beat mode, we stream a real audio file, so tell backend to use 'file' mode
+            // This ensures the backend uses our streamed audio data instead of synthesizing its own
+            const backendType = (audioType === 'beat') ? 'file' : audioType;
+
             this.socket.emit('set_audio', {
-                type: audioType,
+                type: backendType,
                 level: audioLevel,
                 frequency: audioFreq
             });
@@ -359,6 +394,10 @@ class EyesySimulator {
             clearInterval(this.beatInterval);
             this.beatInterval = null;
         }
+        if (this.beatGainNode) {
+            this.beatGainNode.disconnect();
+            this.beatGainNode = null;
+        }
         if (this.audioFileSource) {
             this.audioFileSource.stop();
             this.audioFileSource.disconnect();
@@ -372,7 +411,18 @@ class EyesySimulator {
             clearInterval(this.audioDataInterval);
             this.audioDataInterval = null;
         }
+        if (this.audioStreamElement) {
+            this.audioStreamElement.pause();
+            this.audioStreamElement.src = '';
+            this.audioStreamElement = null;
+        }
+        if (this.audioStreamSource) {
+            this.audioStreamSource.disconnect();
+            this.audioStreamSource = null;
+        }
         this.isAudioPlaying = false;
+        this.isAudioSimulationOn = false;
+        this.updateAudioPlayPauseButton();
     }
 
     createNoiseNode(audioContext) {
@@ -391,10 +441,44 @@ class EyesySimulator {
         return noiseNode;
     }
 
+    async loadBeatSample(ctx, level) {
+        try {
+            // Fetch the beat sample from static files
+            const response = await fetch('/static/audio/kickTom.mp3');
+            if (!response.ok) {
+                throw new Error(`Failed to load beat sample: ${response.status}`);
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+            // Create looping buffer source
+            this.audioFileSource = ctx.createBufferSource();
+            this.audioFileSource.buffer = audioBuffer;
+            this.audioFileSource.loop = true;
+
+            // Connect through analyser (same path as audio file)
+            this.audioFileSource.connect(this.audioAnalyser);
+            this.audioFileSource.start(0);
+
+            // Start sending audio data to backend for visualization
+            this.startAudioDataStream();
+
+            this.isAudioPlaying = true;
+            this.isAudioSimulationOn = true;
+            this.updateAudioPlayPauseButton();
+
+            this.setStatus('Playing beat sample (looping)', 'info');
+        } catch (err) {
+            this.setStatus(`Error loading beat sample: ${err.message}`, 'error');
+            console.error('Beat sample load error:', err);
+        }
+    }
+
     updateAudioPlayback(audioType, level, frequency) {
         this.stopAudioPlayback();
 
         if (audioType === 'silence' || level === 0) {
+            // Already stopped, button updated by stopAudioPlayback
             return;
         }
 
@@ -408,39 +492,44 @@ class EyesySimulator {
 
         if (audioType === 'sine') {
             // Sine wave oscillator
+            // Create analyser for extracting audio data for visualization
+            this.audioAnalyser = ctx.createAnalyser();
+            this.audioAnalyser.fftSize = 2048;
+            this.audioAnalyser.connect(this.audioGain);
+
             this.audioOscillator = ctx.createOscillator();
             this.audioOscillator.type = 'sine';
             this.audioOscillator.frequency.value = frequency;
-            this.audioOscillator.connect(this.audioGain);
+            this.audioOscillator.connect(this.audioAnalyser);
             this.audioOscillator.start();
+
+            // Start sending audio data to backend for visualization
+            this.startAudioDataStream();
 
         } else if (audioType === 'noise') {
             // White noise
+            // Create analyser for extracting audio data for visualization
+            this.audioAnalyser = ctx.createAnalyser();
+            this.audioAnalyser.fftSize = 2048;
+            this.audioAnalyser.connect(this.audioGain);
+
             this.noiseNode = this.createNoiseNode(ctx);
-            this.noiseNode.connect(this.audioGain);
+            this.noiseNode.connect(this.audioAnalyser);
             this.noiseNode.start();
 
+            // Start sending audio data to backend for visualization
+            this.startAudioDataStream();
+
         } else if (audioType === 'beat') {
-            // Beat/kick - short burst every ~500ms
-            const playBeat = () => {
-                const osc = ctx.createOscillator();
-                const beatGain = ctx.createGain();
+            // Beat/kick - load the beat sample file and loop it
+            // This uses the same reliable path as audio file playback
+            this.audioAnalyser = ctx.createAnalyser();
+            this.audioAnalyser.fftSize = 2048;
+            this.audioAnalyser.connect(this.audioGain);
 
-                osc.type = 'sine';
-                osc.frequency.value = 80; // Low kick frequency
-
-                beatGain.gain.setValueAtTime(level * 0.5, ctx.currentTime);
-                beatGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-
-                osc.connect(beatGain);
-                beatGain.connect(ctx.destination);
-
-                osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + 0.15);
-            };
-
-            playBeat(); // Play immediately
-            this.beatInterval = setInterval(playBeat, 500); // Repeat every 500ms
+            // Load the beat sample
+            this.loadBeatSample(ctx, level);
+            return; // loadBeatSample handles the rest asynchronously
 
         } else if (audioType === 'file') {
             // Play loaded audio file
@@ -467,9 +556,66 @@ class EyesySimulator {
             this.startAudioDataStream();
 
             this.setStatus('Playing audio file (streaming to visuals)...', 'info');
+
+        } else if (audioType === 'stream') {
+            // Play internet radio stream via backend proxy
+            const presetUrl = document.getElementById('audioStreamPreset')?.value;
+            const customUrl = document.getElementById('audioStreamUrl')?.value;
+            const streamUrl = presetUrl || customUrl;
+            if (!streamUrl) {
+                this.setStatus('Please select a station or enter a stream URL.', 'error');
+                return;
+            }
+
+            this.setStatus(`Connecting to stream...`, 'info');
+
+            // Use backend proxy to avoid CORS issues
+            const proxyUrl = `/proxy/stream?url=${encodeURIComponent(streamUrl)}`;
+
+            // Create audio element for the stream
+            this.audioStreamElement = new Audio();
+
+            // Handle successful load
+            this.audioStreamElement.oncanplay = () => {
+                this.audioStreamElement.play().then(() => {
+                    // Extract station name from URL for display
+                    const stationName = streamUrl.split('/').pop().replace(/-/g, ' ');
+                    this.setStatus(`Playing: ${stationName}`, 'info');
+
+                    // Try to connect to Web Audio API for visualization
+                    try {
+                        this.initAudioContext();
+                        if (!this.audioStreamSource) {
+                            this.audioStreamSource = this.audioContext.createMediaElementSource(this.audioStreamElement);
+                            this.audioAnalyser = this.audioContext.createAnalyser();
+                            this.audioAnalyser.fftSize = 2048;
+                            this.audioStreamSource.connect(this.audioAnalyser);
+                            this.audioAnalyser.connect(this.audioContext.destination);
+                            this.startAudioDataStream();
+                        }
+                    } catch (err) {
+                        console.log('Could not connect stream to analyser:', err);
+                    }
+                }).catch(err => {
+                    this.setStatus(`Playback error: ${err.message}`, 'error');
+                });
+            };
+
+            // Handle load errors
+            this.audioStreamElement.onerror = (e) => {
+                const error = this.audioStreamElement.error;
+                console.error('Audio stream error:', error);
+                this.setStatus(`Stream error: ${error?.message || 'Failed to load stream'}`, 'error');
+            };
+
+            // Start loading via proxy
+            this.audioStreamElement.src = proxyUrl;
+            this.audioStreamElement.load();
         }
 
         this.isAudioPlaying = true;
+        this.isAudioSimulationOn = true;
+        this.updateAudioPlayPauseButton();
     }
 
     toggleAudioPlayback() {

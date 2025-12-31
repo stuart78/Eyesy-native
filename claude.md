@@ -292,15 +292,119 @@ This project is successful when:
 - ✅ Scripts can access audio data through etc object
 - ✅ Multiple example modes work correctly
 
-## Next Steps for Claude Code
+## Recent Development Progress
 
-1. Set up Flask app with WebSocket support
-2. Create pygame shim that can render pygame commands to PIL Image
-3. Implement Eyesy script executor that runs main.py files
-4. Build web frontend with canvas and controls
-5. Add example modes
-6. Implement audio input simulation
-7. Test with actual Eyesy scripts from GitHub
+### Completed Features (as of Dec 2024)
+
+#### Core Simulator
+- ✅ Flask server with WebSocket (flask-socketio) on port 5001
+- ✅ pygame shim (`pygame_shim.py`) renders to PIL Image
+- ✅ Eyesy script executor loads and runs main.py files
+- ✅ WebSocket streaming of base64 PNG frames to browser
+- ✅ 5 knob controls with real-time updates
+- ✅ Mode selector with refresh functionality
+- ✅ File browser to load custom main.py files
+- ✅ FPS counter displaying actual frame rate
+
+#### Audio Simulation
+- ✅ Multiple audio types: Silence, Sine Wave, White Noise, Beat/Kick, Audio File
+- ✅ Audio level and frequency controls
+- ✅ "Play in browser" toggle to hear simulated audio
+- ✅ Audio file upload and playback with Web Audio API
+- ✅ Real-time audio data streaming to backend via WebSocket
+- ✅ Audio analyser for waveform extraction from uploaded files
+- ✅ Play/Pause button for audio simulation control
+
+#### pygame Shim Features
+- ✅ `pygame.draw.circle()`, `rect()`, `line()`, `polygon()`, `ellipse()`, `arc()`
+- ✅ `pygame.draw.lines()` for connected line segments
+- ✅ `Surface.fill()`, `get_size()`, `blit()`, `get_width()`, `get_height()`, `get_rect()`
+- ✅ `Surface.convert_alpha()` for alpha channel support
+- ✅ `pygame.font.Font` and `pygame.font.SysFont` for text rendering
+- ✅ `Rect` class with position and size attributes
+- ✅ Color constants (SRCALPHA)
+
+#### UI/UX Improvements
+- ✅ IBM Plex Mono font from Google Fonts
+- ✅ Clean title bar (no glow effects or emojis, left-aligned)
+- ✅ Collapsible Controls panel (shrinks to narrow column when collapsed)
+- ✅ Preview panel with 16:9 aspect ratio maintained
+- ✅ Preview size indicator showing actual canvas dimensions
+- ✅ Auto-apply audio settings when sliders change during playback
+- ✅ "Play in browser" defaults to checked
+
+#### Example Modes Included
+- `S-Simple-Circle/` - Basic circle following knob positions
+- `S-Spiral/` - Animated spiral pattern
+- `S-Scope/` - Audio waveform visualization (scope mode)
+- `S-String-Vibration/` - String vibration visualization
+- `S-Living-Grid/` - Dynamic grid pattern
+- `T-Flash/` - Trigger-based flash mode
+
+### Known Issues / Considerations
+- Server runs on port **5001** (not 5000)
+- Modes must use `etc.knob1` through `etc.knob5` (not bare globals) for hardware compatibility
+- Modes must `import pygame` at the top for hardware compatibility
+
+### File Structure (Current)
+```
+eyesy_sim/
+├── backend/
+│   ├── app.py                 # Flask app with WebSocket (port 5001)
+│   ├── eyesy_engine.py        # Core Eyesy execution engine
+│   ├── pygame_shim.py         # pygame compatibility layer (PIL-based)
+│   └── audio_processor.py     # Audio input simulation
+├── frontend/
+│   ├── static/
+│   │   ├── css/
+│   │   │   └── style.css      # IBM Plex Mono, collapsible panels
+│   │   └── js/
+│   │       └── app.js         # WebSocket client, audio playback, UI
+│   └── templates/
+│       └── index.html         # Main UI with Google Fonts
+├── modes/
+│   ├── S-Simple-Circle/main.py
+│   ├── S-Spiral/main.py
+│   ├── S-Scope/main.py
+│   ├── S-String-Vibration/main.py
+│   ├── S-Living-Grid/main.py
+│   └── T-Flash/main.py
+├── requirements.txt
+├── README.md
+└── CLAUDE.md                  # This file
+```
+
+### Running the Simulator
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Run server
+python backend/app.py
+
+# Access at http://localhost:5001
+```
+
+---
+
+## Original Planning Notes
+
+### Next Steps for Claude Code
+
+1. ~~Set up Flask app with WebSocket support~~ ✅
+2. ~~Create pygame shim that can render pygame commands to PIL Image~~ ✅
+3. ~~Implement Eyesy script executor that runs main.py files~~ ✅
+4. ~~Build web frontend with canvas and controls~~ ✅
+5. ~~Add example modes~~ ✅
+6. ~~Implement audio input simulation~~ ✅
+7. Test with actual Eyesy scripts from GitHub (ongoing)
+
+### Future Enhancements to Consider
+- Hot reload - watch main.py for changes
+- Color palette system (Eyesy foreground/background palettes)
+- Save recordings to video file
+- MIDI input support
+- Real-time microphone input
 
 ---
 

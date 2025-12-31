@@ -5,7 +5,8 @@ Flask app for Eyesy Python Simulator
 import os
 import time
 import threading
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, Response
+import requests
 from flask_socketio import SocketIO, emit
 from eyesy_engine import EyesyEngine
 
@@ -202,6 +203,45 @@ def handle_audio_data(data):
             engine.set_audio_data(audio_samples)
     except Exception as e:
         print(f"Error processing audio data: {str(e)}")
+
+@app.route('/proxy/stream')
+def proxy_stream():
+    """Proxy audio streams to bypass CORS restrictions"""
+    stream_url = request.args.get('url')
+    if not stream_url:
+        return Response('Missing url parameter', status=400)
+
+    # Validate URL (basic security check)
+    if not stream_url.startswith(('http://', 'https://')):
+        return Response('Invalid URL', status=400)
+
+    try:
+        # Stream the audio with appropriate headers
+        req = requests.get(stream_url, stream=True, timeout=10, headers={
+            'User-Agent': 'EyesySimulator/1.0'
+        })
+
+        # Get content type from upstream
+        content_type = req.headers.get('Content-Type', 'audio/mpeg')
+
+        def generate():
+            for chunk in req.iter_content(chunk_size=8192):
+                if chunk:
+                    yield chunk
+
+        return Response(
+            generate(),
+            content_type=content_type,
+            headers={
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': 'no-cache'
+            }
+        )
+    except requests.exceptions.Timeout:
+        return Response('Stream connection timeout', status=504)
+    except requests.exceptions.RequestException as e:
+        print(f"Stream proxy error: {e}")
+        return Response(f'Failed to connect to stream: {str(e)}', status=502)
 
 def render_loop():
     """Main rendering loop that runs in a separate thread"""
