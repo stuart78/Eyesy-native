@@ -19,6 +19,7 @@ class EyesySimulator {
         this.noiseNode = null;
         this.beatInterval = null;
         this.isAudioPlaying = false;
+        this.isAudioSimulationOn = false;
         this.audioFileBuffer = null;
         this.audioFileSource = null;
         this.audioAnalyser = null;
@@ -119,6 +120,44 @@ class EyesySimulator {
 
         // Setup audio controls
         this.setupAudioControls();
+
+        // Setup panel collapse
+        this.setupPanelCollapse();
+
+        // Setup preview size display
+        this.setupPreviewSizeDisplay();
+    }
+
+    setupPanelCollapse() {
+        const collapseBtn = document.getElementById('collapseBtn');
+        const controlsPanel = document.getElementById('controlsPanel');
+
+        if (collapseBtn && controlsPanel) {
+            collapseBtn.addEventListener('click', () => {
+                controlsPanel.classList.toggle('collapsed');
+                collapseBtn.textContent = controlsPanel.classList.contains('collapsed') ? '+' : '−';
+                collapseBtn.title = controlsPanel.classList.contains('collapsed') ? 'Expand panel' : 'Collapse panel';
+                // Update preview size after collapse animation
+                setTimeout(() => this.updatePreviewSize(), 50);
+            });
+        }
+    }
+
+    setupPreviewSizeDisplay() {
+        // Update on window resize
+        window.addEventListener('resize', () => this.updatePreviewSize());
+        // Initial update
+        this.updatePreviewSize();
+    }
+
+    updatePreviewSize() {
+        const previewSizeElement = document.getElementById('previewSize');
+        if (previewSizeElement && this.canvas) {
+            const rect = this.canvas.getBoundingClientRect();
+            const width = Math.round(rect.width);
+            const height = Math.round(rect.height);
+            previewSizeElement.textContent = `${width}x${height}`;
+        }
     }
 
     setupAudioControls() {
@@ -128,12 +167,16 @@ class EyesySimulator {
         const audioFreqValue = document.getElementById('audioFreqValue');
         const applyAudioBtn = document.getElementById('applyAudioBtn');
 
-        // Update displayed values on slider change and update audio if playing
+        // Update displayed values on slider change and auto-apply if simulation is on
         audioLevel.addEventListener('input', () => {
             audioLevelValue.textContent = (audioLevel.value / 100).toFixed(2);
             // Update gain in real-time if audio is playing
             if (this.isAudioPlaying && this.audioGain) {
                 this.audioGain.gain.value = (audioLevel.value / 100) * 0.3;
+            }
+            // Auto-apply if simulation is on
+            if (this.isAudioSimulationOn) {
+                this.applyAudioSettings();
             }
         });
 
@@ -142,6 +185,10 @@ class EyesySimulator {
             // Update frequency in real-time if oscillator is playing
             if (this.isAudioPlaying && this.audioOscillator) {
                 this.audioOscillator.frequency.value = parseInt(audioFreq.value);
+            }
+            // Auto-apply if simulation is on
+            if (this.isAudioSimulationOn) {
+                this.applyAudioSettings();
             }
         });
 
@@ -155,11 +202,20 @@ class EyesySimulator {
             this.applyAudioSettings();
         });
 
-        // Audio playback toggle
+        // Audio playback toggle (checkbox)
         const playAudioToggle = document.getElementById('playAudioToggle');
         if (playAudioToggle) {
             playAudioToggle.addEventListener('change', () => {
                 this.toggleAudioPlayback();
+                this.updateAudioPlayPauseButton();
+            });
+        }
+
+        // Audio play/pause button
+        const audioPlayPauseBtn = document.getElementById('audioPlayPauseBtn');
+        if (audioPlayPauseBtn) {
+            audioPlayPauseBtn.addEventListener('click', () => {
+                this.toggleAudioSimulation();
             });
         }
 
@@ -233,6 +289,45 @@ class EyesySimulator {
             }
 
             this.setStatus(`Audio: ${audioType} (level: ${audioLevel.toFixed(2)}, freq: ${audioFreq}Hz)`, 'info');
+        }
+    }
+
+    toggleAudioSimulation() {
+        this.isAudioSimulationOn = !this.isAudioSimulationOn;
+
+        if (this.isAudioSimulationOn) {
+            // Turn on audio simulation - apply current settings
+            this.applyAudioSettings();
+        } else {
+            // Turn off audio simulation - set to silence on backend
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('set_audio', {
+                    type: 'silence',
+                    level: 0,
+                    frequency: 440
+                });
+            }
+            // Stop browser audio playback (but don't change the checkbox)
+            this.stopAudioPlayback();
+        }
+
+        this.updateAudioPlayPauseButton();
+    }
+
+    updateAudioPlayPauseButton() {
+        const btn = document.getElementById('audioPlayPauseBtn');
+        if (!btn) return;
+
+        const isPlaying = this.isAudioSimulationOn || this.isAudioPlaying;
+
+        if (isPlaying) {
+            btn.innerHTML = '&#10074;&#10074;'; // Pause symbol (two vertical bars)
+            btn.title = 'Pause audio';
+            btn.classList.add('playing');
+        } else {
+            btn.innerHTML = '&#9654;'; // Play symbol (triangle)
+            btn.title = 'Play audio';
+            btn.classList.remove('playing');
         }
     }
 

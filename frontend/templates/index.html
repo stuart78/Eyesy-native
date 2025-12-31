@@ -4,118 +4,132 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eyesy Python Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>🎨 EYESY Python Simulator 🎨</h1>
+        <h1>EYESY Python Simulator</h1>
 
         <div class="layout">
-            <div class="panel">
-                <h2>Controls</h2>
+            <div class="panel controls-panel" id="controlsPanel">
+                <h2>
+                    <span>Controls</span>
+                    <button class="collapse-btn" id="collapseBtn" title="Collapse panel">−</button>
+                </h2>
 
-                <div class="mode-selector">
-                    <label for="modeSelect">Mode:</label>
-                    <select id="modeSelect">
-                        <option value="">Select a mode...</option>
-                    </select>
-                    <button id="loadModeBtn">Load Mode</button>
-                </div>
-
-                <div class="file-selector">
-                    <label for="fileInput">Or load from file:</label>
-                    <input type="file" id="fileInput" accept=".py" style="display: none;">
-                    <button id="browseFileBtn">📁 Browse main.py</button>
-                    <span id="selectedFile" class="selected-file">No file selected</span>
-                    <button id="loadFileBtn" disabled>Load File</button>
-                </div>
-
-                <div class="controls">
-                    <div class="knob-control">
-                        <label>Knob 1</label>
-                        <input type="range" id="knob1" min="0" max="100" value="50">
-                        <div class="value">0.50</div>
-                    </div>
-                    <div class="knob-control">
-                        <label>Knob 2</label>
-                        <input type="range" id="knob2" min="0" max="100" value="50">
-                        <div class="value">0.50</div>
-                    </div>
-                    <div class="knob-control">
-                        <label>Knob 3</label>
-                        <input type="range" id="knob3" min="0" max="100" value="50">
-                        <div class="value">0.50</div>
-                    </div>
-                    <div class="knob-control">
-                        <label>Knob 4</label>
-                        <input type="range" id="knob4" min="0" max="100" value="50">
-                        <div class="value">0.50</div>
-                    </div>
-                    <div class="knob-control">
-                        <label>Knob 5</label>
-                        <input type="range" id="knob5" min="0" max="100" value="50">
-                        <div class="value">0.50</div>
-                    </div>
-                </div>
-
-                <div class="buttons">
-                    <button id="startBtn">🎬 Start</button>
-                    <button id="stopBtn" disabled>⏹ Stop</button>
-                    <button id="refreshModesBtn">🔄 Refresh Modes</button>
-                </div>
-
-                <div class="audio-controls">
-                    <h3>Audio Simulation</h3>
-                    <div class="audio-row">
-                        <label for="audioType">Type:</label>
-                        <select id="audioType">
-                            <option value="silence">Silence</option>
-                            <option value="sine">Sine Wave</option>
-                            <option value="noise">White Noise</option>
-                            <option value="beat">Beat/Kick</option>
-                            <option value="file">Audio File</option>
+                <div class="panel-content" id="panelContent">
+                    <div class="mode-selector">
+                        <label for="modeSelect">Mode:</label>
+                        <select id="modeSelect">
+                            <option value="">Select a mode...</option>
                         </select>
+                        <button id="loadModeBtn">Load Mode</button>
                     </div>
-                    <div class="audio-row audio-file-row" id="audioFileRow" style="display: none;">
-                        <label for="audioFileInput">File:</label>
-                        <input type="file" id="audioFileInput" accept="audio/*" style="display: none;">
-                        <button type="button" id="browseAudioBtn" class="browse-btn">Browse...</button>
-                        <span id="audioFileName" class="audio-file-name">No file selected</span>
-                    </div>
-                    <div class="audio-row">
-                        <label for="audioLevel">Level:</label>
-                        <input type="range" id="audioLevel" min="0" max="100" value="50">
-                        <span id="audioLevelValue">0.50</span>
-                    </div>
-                    <div class="audio-row">
-                        <label for="audioFreq">Frequency:</label>
-                        <input type="range" id="audioFreq" min="20" max="2000" value="440">
-                        <span id="audioFreqValue">440 Hz</span>
-                    </div>
-                    <div class="audio-row audio-toggle">
-                        <label for="playAudioToggle">Play in browser:</label>
-                        <input type="checkbox" id="playAudioToggle">
-                        <span class="toggle-hint">Hear the simulated audio</span>
-                    </div>
-                    <button id="applyAudioBtn">Apply Audio Settings</button>
-                </div>
 
-                <div id="status">Connecting to server...</div>
+                    <div class="file-selector">
+                        <label for="fileInput">Or load from file:</label>
+                        <input type="file" id="fileInput" accept=".py" style="display: none;">
+                        <button id="browseFileBtn">Browse main.py</button>
+                        <span id="selectedFile" class="selected-file">No file selected</span>
+                        <button id="loadFileBtn" disabled>Load File</button>
+                    </div>
 
-                <div class="info">
-                    <strong>Eyesy Python Simulator</strong><br>
-                    Running actual Python scripts on the backend with pygame compatibility.<br>
-                    Canvas: 1280x720 | Target FPS: 30
+                    <div class="controls">
+                        <div class="knob-control">
+                            <label>Knob 1</label>
+                            <input type="range" id="knob1" min="0" max="100" value="50">
+                            <div class="value">0.50</div>
+                        </div>
+                        <div class="knob-control">
+                            <label>Knob 2</label>
+                            <input type="range" id="knob2" min="0" max="100" value="50">
+                            <div class="value">0.50</div>
+                        </div>
+                        <div class="knob-control">
+                            <label>Knob 3</label>
+                            <input type="range" id="knob3" min="0" max="100" value="50">
+                            <div class="value">0.50</div>
+                        </div>
+                        <div class="knob-control">
+                            <label>Knob 4</label>
+                            <input type="range" id="knob4" min="0" max="100" value="50">
+                            <div class="value">0.50</div>
+                        </div>
+                        <div class="knob-control">
+                            <label>Knob 5</label>
+                            <input type="range" id="knob5" min="0" max="100" value="50">
+                            <div class="value">0.50</div>
+                        </div>
+                    </div>
+
+                    <div class="buttons">
+                        <button id="startBtn">Start</button>
+                        <button id="stopBtn" disabled>Stop</button>
+                        <button id="refreshModesBtn">Refresh Modes</button>
+                    </div>
+
+                    <div class="audio-controls">
+                        <h3>
+                            <span>Audio Simulation</span>
+                            <button id="audioPlayPauseBtn" class="audio-play-btn" title="Play audio">&#9654;</button>
+                        </h3>
+                        <div class="audio-row">
+                            <label for="audioType">Type:</label>
+                            <select id="audioType">
+                                <option value="silence">Silence</option>
+                                <option value="sine">Sine Wave</option>
+                                <option value="noise">White Noise</option>
+                                <option value="beat">Beat/Kick</option>
+                                <option value="file">Audio File</option>
+                            </select>
+                        </div>
+                        <div class="audio-row audio-file-row" id="audioFileRow" style="display: none;">
+                            <label for="audioFileInput">File:</label>
+                            <input type="file" id="audioFileInput" accept="audio/*" style="display: none;">
+                            <button type="button" id="browseAudioBtn" class="browse-btn">Browse...</button>
+                            <span id="audioFileName" class="audio-file-name">No file selected</span>
+                        </div>
+                        <div class="audio-row">
+                            <label for="audioLevel">Level:</label>
+                            <input type="range" id="audioLevel" min="0" max="100" value="50">
+                            <span id="audioLevelValue">0.50</span>
+                        </div>
+                        <div class="audio-row">
+                            <label for="audioFreq">Frequency:</label>
+                            <input type="range" id="audioFreq" min="20" max="2000" value="440">
+                            <span id="audioFreqValue">440 Hz</span>
+                        </div>
+                        <div class="audio-row audio-toggle">
+                            <label for="playAudioToggle">Play in browser:</label>
+                            <input type="checkbox" id="playAudioToggle" checked>
+                            <span class="toggle-hint">Hear the simulated audio</span>
+                        </div>
+                        <button id="applyAudioBtn">Apply Audio Settings</button>
+                    </div>
+
+                    <div id="status">Connecting to server...</div>
+
+                    <div class="info">
+                        <strong>Eyesy Python Simulator</strong><br>
+                        Running actual Python scripts on the backend with pygame compatibility.<br>
+                        Canvas: 1280x720 | Target FPS: 30
+                    </div>
                 </div>
             </div>
 
             <div class="panel">
-                <h2>Visual Output (1280x720)</h2>
+                <h2>Preview</h2>
                 <canvas id="canvas" width="1280" height="720"></canvas>
 
                 <div class="stats">
                     <span id="fps">FPS: --</span>
                     <span id="connection">●</span>
+                </div>
+                <div class="preview-size">
+                    <span>Preview Canvas: </span><span id="previewSize">--x--</span>
                 </div>
             </div>
         </div>

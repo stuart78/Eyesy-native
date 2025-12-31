@@ -1,7 +1,7 @@
 body {
     margin: 0;
     padding: 20px;
-    font-family: 'Courier New', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     background: #1a1a1a;
     color: #00ff00;
 }
@@ -12,9 +12,8 @@ body {
 }
 
 h1 {
-    text-align: center;
+    text-align: left;
     color: #00ffff;
-    text-shadow: 0 0 10px #00ffff;
     margin-bottom: 30px;
 }
 
@@ -36,15 +35,57 @@ h1 {
     color: #00ffff;
     font-size: 18px;
     margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.collapse-btn {
+    background: transparent;
+    color: #00ffff;
+    border: 1px solid #00ffff;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.collapse-btn:hover {
+    background: #00ffff;
+    color: #000;
+    box-shadow: none;
+}
+
+.controls-panel.collapsed .panel-content {
+    display: none;
+}
+
+.controls-panel.collapsed {
+    width: auto;
+}
+
+.controls-panel.collapsed h2 {
+    margin-bottom: 0;
+}
+
+.controls-panel.collapsed h2 span {
+    display: none;
+}
+
+.layout:has(.controls-panel.collapsed) {
+    grid-template-columns: auto 1fr;
 }
 
 #canvas {
     width: 100%;
     height: auto;
+    aspect-ratio: 16 / 9;
     background: #000;
     border: 2px solid #00ff00;
     image-rendering: pixelated;
-    max-height: 400px;
 }
 
 .mode-selector {
@@ -67,7 +108,7 @@ h1 {
     border: 1px solid #00ff00;
     padding: 8px;
     border-radius: 4px;
-    font-family: 'Courier New', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     min-width: 200px;
 }
 
@@ -147,8 +188,8 @@ button {
     padding: 12px 20px;
     border-radius: 4px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
     transition: all 0.2s;
     font-size: 14px;
 }
@@ -212,6 +253,33 @@ button:disabled {
     margin: 0 0 15px 0;
     font-size: 14px;
     color: #ff00ff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.audio-play-btn {
+    background: transparent;
+    color: #ff00ff;
+    border: 1px solid #ff00ff;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.audio-play-btn:hover {
+    background: #ff00ff;
+    color: #000;
+    box-shadow: none;
+}
+
+.audio-play-btn.playing {
+    background: #ff00ff;
+    color: #000;
 }
 
 .audio-row {
@@ -234,7 +302,7 @@ button:disabled {
     border: 1px solid #ff00ff;
     padding: 6px;
     border-radius: 4px;
-    font-family: 'Courier New', monospace;
+    font-family: 'IBM Plex Mono', monospace;
 }
 
 .audio-row input[type="range"] {
@@ -314,6 +382,12 @@ button:disabled {
     justify-content: space-between;
     align-items: center;
     font-size: 12px;
+}
+
+.preview-size {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #00ffff;
 }
 
 #fps {
