@@ -45,6 +45,8 @@ def handle_connect():
     """Handle client connection"""
     print(f"Client connected: {request.sid}")
     emit('status', {'message': 'Connected to Eyesy simulator', 'type': 'success'})
+    # Send current rendering state so client can sync button states
+    emit('rendering_state', {'is_running': is_running})
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -110,6 +112,8 @@ def handle_start_rendering():
     render_thread.start()
 
     emit('status', {'message': 'Rendering started', 'type': 'success'})
+    # Broadcast to all clients so they sync their button states
+    socketio.emit('rendering_state', {'is_running': True})
 
 @socketio.on('stop_rendering')
 def handle_stop_rendering():
@@ -118,6 +122,8 @@ def handle_stop_rendering():
 
     is_running = False
     emit('status', {'message': 'Rendering stopped', 'type': 'info'})
+    # Broadcast to all clients so they sync their button states
+    socketio.emit('rendering_state', {'is_running': False})
 
 @socketio.on('get_modes')
 def handle_get_modes():

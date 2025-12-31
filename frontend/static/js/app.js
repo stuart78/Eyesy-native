@@ -76,6 +76,16 @@ class EyesySimulator {
         this.socket.on('modes_list', (data) => {
             this.populateModeSelector(data.modes);
         });
+
+        this.socket.on('rendering_state', (data) => {
+            this.updateRenderingState(data.is_running);
+        });
+    }
+
+    updateRenderingState(isRunning) {
+        this.isRunning = isRunning;
+        document.getElementById('startBtn').disabled = isRunning;
+        document.getElementById('stopBtn').disabled = !isRunning;
     }
 
     setupControls() {
@@ -677,18 +687,14 @@ class EyesySimulator {
     startRendering() {
         if (this.socket && this.socket.connected) {
             this.socket.emit('start_rendering');
-            this.isRunning = true;
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = false;
+            // Button state will be updated by rendering_state event from server
         }
     }
 
     stopRendering() {
         if (this.socket && this.socket.connected) {
             this.socket.emit('stop_rendering');
-            this.isRunning = false;
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = true;
+            // Button state will be updated by rendering_state event from server
         }
     }
 

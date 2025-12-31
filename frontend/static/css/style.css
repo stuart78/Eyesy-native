@@ -1,9 +1,9 @@
 body {
     margin: 0;
     padding: 20px;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'League Spartan', sans-serif;
     background: #1a1a1a;
-    color: #00ff00;
+    color: #e0e0e0;
 }
 
 .container {
@@ -13,7 +13,7 @@ body {
 
 h1 {
     text-align: left;
-    color: #00ffff;
+    color: #ffffff;
     margin-bottom: 30px;
 }
 
@@ -24,15 +24,15 @@ h1 {
 }
 
 .panel {
-    background: #2a2a2a;
-    border: 2px solid #00ff00;
-    border-radius: 8px;
+    background: #252525;
+    border: 1px solid #444;
+    border-radius: 0;
     padding: 20px;
 }
 
 .panel h2 {
     margin-top: 0;
-    color: #00ffff;
+    color: #ffffff;
     font-size: 18px;
     margin-bottom: 20px;
     display: flex;
@@ -42,20 +42,20 @@ h1 {
 
 .collapse-btn {
     background: transparent;
-    color: #00ffff;
-    border: 1px solid #00ffff;
+    color: #999;
+    border: 1px solid #555;
     width: 28px;
     height: 28px;
     padding: 0;
     font-size: 18px;
     line-height: 1;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 0;
 }
 
 .collapse-btn:hover {
-    background: #00ffff;
-    color: #000;
+    background: #444;
+    color: #fff;
     box-shadow: none;
 }
 
@@ -84,7 +84,7 @@ h1 {
     height: auto;
     aspect-ratio: 16 / 9;
     background: #000;
-    border: 2px solid #00ff00;
+    border: 1px solid #444;
     image-rendering: pixelated;
 }
 
@@ -99,16 +99,17 @@ h1 {
 .mode-selector label {
     font-weight: bold;
     min-width: 50px;
+    color: #ccc;
 }
 
 .mode-selector select {
     flex: 1;
     background: #1a1a1a;
-    color: #00ff00;
-    border: 1px solid #00ff00;
+    color: #e0e0e0;
+    border: 1px solid #555;
     padding: 8px;
-    border-radius: 4px;
-    font-family: 'IBM Plex Mono', monospace;
+    border-radius: 0;
+    font-family: 'League Spartan', sans-serif;
     min-width: 200px;
 }
 
@@ -116,15 +117,15 @@ h1 {
     margin-bottom: 20px;
     padding: 15px;
     background: #1a1a1a;
-    border: 1px solid #00ffff;
-    border-radius: 4px;
+    border: 1px solid #444;
+    border-radius: 0;
 }
 
 .file-selector label {
     display: block;
     margin-bottom: 10px;
     font-weight: bold;
-    color: #00ffff;
+    color: #ccc;
 }
 
 .file-selector .selected-file {
@@ -136,7 +137,7 @@ h1 {
 }
 
 .file-selector .selected-file.has-file {
-    color: #00ff00;
+    color: #e0e0e0;
     font-style: normal;
 }
 
@@ -166,6 +167,7 @@ h1 {
     margin-bottom: 8px;
     font-size: 12px;
     font-weight: bold;
+    color: #ccc;
 }
 
 .knob-control input[type="range"] {
@@ -175,7 +177,7 @@ h1 {
 
 .knob-control .value {
     font-size: 11px;
-    color: #00ffff;
+    color: #999;
     font-weight: bold;
 }
 
@@ -187,26 +189,26 @@ h1 {
 }
 
 button {
-    background: #00ff00;
-    color: #000;
+    background: #444;
+    color: #fff;
     border: none;
     padding: 12px 20px;
-    border-radius: 4px;
+    border-radius: 0;
     cursor: pointer;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'League Spartan', sans-serif;
     font-weight: 600;
     transition: all 0.2s;
     font-size: 14px;
 }
 
 button:hover {
-    background: #00ffff;
-    box-shadow: 0 0 10px #00ffff;
+    background: #555;
+    box-shadow: none;
 }
 
 button:disabled {
-    background: #555;
-    color: #888;
+    background: #333;
+    color: #666;
     cursor: not-allowed;
     box-shadow: none;
 }
@@ -214,35 +216,36 @@ button:disabled {
 #status {
     padding: 12px;
     background: #1a1a1a;
-    border: 1px solid #00ff00;
-    border-radius: 4px;
+    border: 1px solid #444;
+    border-radius: 0;
     font-size: 12px;
     margin-bottom: 15px;
     min-height: 20px;
+    color: #999;
 }
 
 .status-error {
-    color: #ff0000 !important;
-    border-color: #ff0000 !important;
+    color: #e57373 !important;
+    border-color: #e57373 !important;
 }
 
 .status-success {
-    color: #00ff00 !important;
-    border-color: #00ff00 !important;
+    color: #81c784 !important;
+    border-color: #81c784 !important;
 }
 
 .status-info {
-    color: #00ffff !important;
-    border-color: #00ffff !important;
+    color: #999 !important;
+    border-color: #555 !important;
 }
 
 .info {
     padding: 12px;
-    background: #2a2a2a;
-    border: 1px solid #00ffff;
-    border-radius: 4px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 0;
     font-size: 11px;
-    color: #00ffff;
+    color: #888;
     line-height: 1.4;
 }
 
@@ -250,15 +253,15 @@ button:disabled {
     margin-bottom: 20px;
     padding: 15px;
     background: #1a1a1a;
-    border: 1px solid #ff00ff;
-    border-radius: 4px;
+    border: 1px solid #444;
+    border-radius: 0;
 }
 
 .audio-controls h3 {
     margin: 0 0 10px 0;
     font-size: 12px;
-    font-weight: normal;
-    color: #ff00ff;
+    font-weight: bold;
+    color: #ccc;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -272,26 +275,26 @@ button:disabled {
 
 .audio-play-btn {
     background: transparent;
-    color: #ff00ff;
-    border: 1px solid #ff00ff;
+    color: #999;
+    border: 1px solid #555;
     width: 28px;
     height: 28px;
     padding: 0;
     font-size: 14px;
     line-height: 1;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 0;
 }
 
 .audio-play-btn:hover {
-    background: #ff00ff;
-    color: #000;
+    background: #444;
+    color: #fff;
     box-shadow: none;
 }
 
 .audio-play-btn.playing {
-    background: #ff00ff;
-    color: #000;
+    background: #555;
+    color: #fff;
 }
 
 .audio-row {
@@ -306,17 +309,17 @@ button:disabled {
     min-width: 75px;
     flex-shrink: 0;
     font-size: 12px;
-    color: #ff00ff;
+    color: #999;
 }
 
 .audio-row select {
     flex: 1;
-    background: #2a2a2a;
-    color: #ff00ff;
-    border: 1px solid #ff00ff;
+    background: #252525;
+    color: #e0e0e0;
+    border: 1px solid #555;
     padding: 6px;
-    border-radius: 4px;
-    font-family: 'IBM Plex Mono', monospace;
+    border-radius: 0;
+    font-family: 'League Spartan', sans-serif;
     font-size: 12px;
 }
 
@@ -327,19 +330,19 @@ button:disabled {
 .audio-row span {
     min-width: 55px;
     font-size: 12px;
-    color: #ff00ff;
+    color: #999;
     text-align: right;
 }
 
 .audio-file-row .browse-btn {
     padding: 6px 12px;
     font-size: 12px;
-    background: #ff00ff;
-    color: #000;
+    background: #444;
+    color: #fff;
 }
 
 .audio-file-row .browse-btn:hover {
-    background: #ff66ff;
+    background: #555;
 }
 
 .audio-file-name {
@@ -355,12 +358,12 @@ button:disabled {
 
 .audio-stream-url-row input[type="text"] {
     flex: 1;
-    background: #2a2a2a;
-    color: #ff00ff;
-    border: 1px solid #ff00ff;
+    background: #252525;
+    color: #e0e0e0;
+    border: 1px solid #555;
     padding: 6px;
-    border-radius: 4px;
-    font-family: 'IBM Plex Mono', monospace;
+    border-radius: 0;
+    font-family: 'League Spartan', sans-serif;
     font-size: 12px;
 }
 
@@ -369,7 +372,7 @@ button:disabled {
 }
 
 .audio-file-name.has-file {
-    color: #ff00ff;
+    color: #e0e0e0;
     font-style: normal;
 }
 
@@ -380,7 +383,7 @@ button:disabled {
 .audio-toggle input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #ff00ff;
+    accent-color: #666;
     cursor: pointer;
 }
 
@@ -393,14 +396,14 @@ button:disabled {
 }
 
 .audio-controls button#applyAudioBtn {
-    background: #ff00ff;
-    color: #000;
+    background: #444;
+    color: #fff;
     width: auto;
 }
 
 .audio-controls button:hover {
-    background: #ff66ff;
-    box-shadow: 0 0 10px #ff00ff;
+    background: #555;
+    box-shadow: none;
 }
 
 .stats {
@@ -414,20 +417,20 @@ button:disabled {
 .preview-size {
     margin-top: 5px;
     font-size: 12px;
-    color: #00ffff;
+    color: #888;
 }
 
 #fps {
-    color: #00ffff;
+    color: #999;
 }
 
 #connection {
     font-size: 16px;
-    color: #ff0000;
+    color: #e57373;
 }
 
 #connection.connected {
-    color: #00ff00;
+    color: #81c784;
 }
 
 /* Responsive design */
