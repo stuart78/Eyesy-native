@@ -4,6 +4,8 @@ A web-based simulator for the [Critter & Guitari EYESY](https://www.critterandgu
 
 **Version 1.0** | Created by Stuart Frederich-Smith | [signalfunctionset.com](https://signalfunctionset.com)
 
+![EYESY Simulator Preview](preview.jpeg)
+
 ## Features
 
 ### Core Simulator
