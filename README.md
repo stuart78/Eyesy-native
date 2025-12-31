@@ -2,7 +2,7 @@
 
 A web-based simulator for the **Critter & Guitari Eyesy video synthesizer** that runs actual Python scripts locally.
 
-## ✅ Current Status: MVP Complete + File Browser!
+## ✅ Current Status: MVP Complete + File Browser
 
 The simulator is now functional with all core features implemented:
 
