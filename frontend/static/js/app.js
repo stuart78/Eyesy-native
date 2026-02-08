@@ -21,7 +21,8 @@ class EyesySimulator {
         this.beatGainNode = null;
         this.isAudioPlaying = false;
         this.isAudioSimulationOn = false;
-        this.audioFileBuffer = null;
+        this.audioFileObjectUrl = null;  // Object URL for loaded audio file
+        this.audioFileReady = false;     // Whether an audio file has been loaded
         this.audioFileSource = null;
         this.audioAnalyser = null;
         this.audioDataInterval = null;
@@ -341,23 +342,22 @@ class EyesySimulator {
             audioFileName.textContent = file.name;
             audioFileName.classList.add('has-file');
 
-            // Load the audio file
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    this.initAudioContext();
-                    this.audioFileBuffer = await this.audioContext.decodeAudioData(e.target.result);
-                    this.setStatus(`Audio file "${file.name}" loaded successfully`, 'success');
-                } catch (err) {
-                    this.setStatus(`Error loading audio file: ${err.message}`, 'error');
-                    this.audioFileBuffer = null;
-                }
-            };
-            reader.readAsArrayBuffer(file);
+            // Store the file as an object URL for HTML5 Audio playback
+            // (avoids decodeAudioData which can crash the Electron renderer)
+            if (this.audioFileObjectUrl) {
+                URL.revokeObjectURL(this.audioFileObjectUrl);
+            }
+            this.audioFileObjectUrl = URL.createObjectURL(file);
+            this.audioFileReady = true;
+            this.setStatus(`Audio file "${file.name}" loaded successfully`, 'success');
         } else {
             audioFileName.textContent = 'No file selected';
             audioFileName.classList.remove('has-file');
-            this.audioFileBuffer = null;
+            if (this.audioFileObjectUrl) {
+                URL.revokeObjectURL(this.audioFileObjectUrl);
+                this.audioFileObjectUrl = null;
+            }
+            this.audioFileReady = false;
         }
     }
 
@@ -503,50 +503,56 @@ class EyesySimulator {
         return noiseNode;
     }
 
-    async loadBeatSample(ctx, level) {
-        try {
-            // Fetch the beat sample from static files
-            const response = await fetch('/static/audio/kickTom.mp3');
-            if (!response.ok) {
-                throw new Error(`Failed to load beat sample: ${response.status}`);
+    startBeatSynth(ctx, level) {
+        // Synthesize a kick drum pattern using oscillators instead of loading an audio file.
+        // This avoids MP3 decoding crashes in some Electron/Chromium versions.
+        const bpm = 120;
+        const beatInterval = 60.0 / bpm; // seconds per beat
+
+        const scheduleBeat = () => {
+            if (!this.audioAnalyser || !this.audioGain) return;
+
+            try {
+                // Kick oscillator: starts at ~150Hz, sweeps down to ~40Hz
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.12);
+
+                // Amplitude envelope: sharp attack, quick decay
+                const env = ctx.createGain();
+                env.gain.setValueAtTime(level * 0.8, ctx.currentTime);
+                env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+
+                osc.connect(env);
+                env.connect(this.audioAnalyser);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.25);
+            } catch (e) {
+                // Ignore scheduling errors if context was cleaned up
             }
-            const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+        };
 
-            // Check if audio was stopped/changed while we were loading
-            if (!this.audioAnalyser || !this.audioGain) {
-                console.log('Beat sample loaded but audio context was cleaned up, skipping');
-                return;
-            }
+        // Schedule first beat immediately
+        scheduleBeat();
 
-            // Create looping buffer source
-            this.audioFileSource = ctx.createBufferSource();
-            this.audioFileSource.buffer = audioBuffer;
-            this.audioFileSource.loop = true;
+        // Schedule subsequent beats at the BPM interval
+        this.beatInterval = setInterval(scheduleBeat, beatInterval * 1000);
 
-            // Connect through analyser (same path as audio file)
-            this.audioFileSource.connect(this.audioAnalyser);
-            this.audioFileSource.start(0);
+        // Start sending audio data to backend for visualization
+        this.startAudioDataStream();
 
-            // Start sending audio data to backend for visualization
-            this.startAudioDataStream();
+        this.isAudioPlaying = true;
+        this.isAudioSimulationOn = true;
+        this.updateAudioPlayPauseButton();
 
-            this.isAudioPlaying = true;
-            this.isAudioSimulationOn = true;
-            this.updateAudioPlayPauseButton();
-
-            this.setStatus('Playing beat sample (looping)', 'info');
-        } catch (err) {
-            this.setStatus(`Error loading beat sample: ${err.message}`, 'error');
-            console.error('Beat sample load error:', err);
-        }
+        this.setStatus(`Playing synthesized beat (${bpm} BPM)`, 'info');
     }
 
     updateAudioPlayback(audioType, level, frequency) {
         this.stopAudioPlayback();
 
         if (audioType === 'silence' || level === 0) {
-            // Already stopped, button updated by stopAudioPlayback
             return;
         }
 
@@ -595,41 +601,42 @@ class EyesySimulator {
             this.startAudioDataStream();
 
         } else if (audioType === 'beat') {
-            // Beat/kick - load the beat sample file and loop it
-            // This uses the same reliable path as audio file playback
+            // Beat/kick - synthesize a kick drum pattern using oscillators
+            // (avoids MP3 decoding crashes in some Electron/Chromium builds)
             this.audioAnalyser = ctx.createAnalyser();
             this.audioAnalyser.fftSize = 2048;
             this.audioAnalyser.connect(this.audioGain);
 
-            // Load the beat sample
-            this.loadBeatSample(ctx, level);
-            return; // loadBeatSample handles the rest asynchronously
+            this.startBeatSynth(ctx, level);
+            return; // startBeatSynth handles the rest
 
         } else if (audioType === 'file') {
-            // Play loaded audio file
-            if (!this.audioFileBuffer) {
+            // Play loaded audio file using HTML5 Audio element + MediaElementSource
+            // (avoids decodeAudioData which can crash the Electron renderer with certain codecs)
+            if (!this.audioFileReady || !this.audioFileObjectUrl) {
                 this.setStatus('No audio file loaded. Please select a file first.', 'error');
                 return;
             }
 
-            // Create buffer source for the audio file
-            this.audioFileSource = ctx.createBufferSource();
-            this.audioFileSource.buffer = this.audioFileBuffer;
-            this.audioFileSource.loop = true;
+            // Create an <audio> element for playback
+            this.audioStreamElement = new Audio();
+            this.audioStreamElement.src = this.audioFileObjectUrl;
+            this.audioStreamElement.loop = true;
 
-            // Create analyser for extracting audio data
             this.audioAnalyser = ctx.createAnalyser();
-            this.audioAnalyser.fftSize = 2048;  // Gives us 1024 time-domain samples
+            this.audioAnalyser.fftSize = 2048;
 
-            // Connect: source -> analyser -> gain -> destination
-            this.audioFileSource.connect(this.audioAnalyser);
+            // Connect: audio element -> media source -> analyser -> gain -> destination
+            this.audioStreamSource = ctx.createMediaElementSource(this.audioStreamElement);
+            this.audioStreamSource.connect(this.audioAnalyser);
             this.audioAnalyser.connect(this.audioGain);
-            this.audioFileSource.start(0);
 
-            // Start sending audio data to backend for visualization
-            this.startAudioDataStream();
-
-            this.setStatus('Playing audio file (streaming to visuals)...', 'info');
+            this.audioStreamElement.play().then(() => {
+                this.startAudioDataStream();
+                this.setStatus('Playing audio file (streaming to visuals)...', 'info');
+            }).catch(err => {
+                this.setStatus(`Error playing audio file: ${err.message}`, 'error');
+            });
 
         } else if (audioType === 'stream') {
             // Play internet radio stream via backend proxy

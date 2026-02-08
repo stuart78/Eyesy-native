@@ -34,6 +34,7 @@ class EtcObject:
         self.audio_frequency = 440.0  # Hz for sine wave
         self.audio_type = "sine"  # "sine", "noise", "silence", "beat", "file"
         self.frame_count = 0
+        self._file_audio_received = False  # True once browser sends audio data
 
         # Color palettes (mock values)
         self.color_picker_bg = self._color_picker_bg
@@ -172,6 +173,20 @@ class EtcObject:
 
             self.audio_in = audio_data
 
+        else:
+            # Fallback for 'file' mode (before browser audio arrives) or unknown types
+            # Generate a sine wave so modes have audio to react to
+            sample_rate = 44100
+            samples_per_frame = buffer_size
+            amplitude = self.audio_level * 32767
+            audio_data = []
+            for i in range(samples_per_frame):
+                sample_index = (self.frame_count * samples_per_frame + i)
+                time_s = sample_index / sample_rate
+                sample = amplitude * math.sin(2 * math.pi * self.audio_frequency * time_s)
+                audio_data.append(sample)
+            self.audio_in = audio_data
+
         # Copy to stereo channels (all aliases)
         self.audio_left = self.audio_in[:]
         self.audio_right = self.audio_in[:]
@@ -297,8 +312,11 @@ class EyesyEngine:
             # Update knob values in the mode and etc object
             self.update_knobs_in_mode()
 
-            # Generate audio data for this frame (unless using external audio file)
-            if self.etc.audio_type != 'file':
+            # Generate audio data for this frame
+            # In 'file' mode, skip only once browser is actually streaming audio data
+            if self.etc.audio_type == 'file' and self.etc._file_audio_received:
+                pass  # Using live audio from browser
+            else:
                 self.etc.generate_audio_data()
 
             # Run setup if this is the first frame
@@ -335,6 +353,7 @@ class EyesyEngine:
         Real Eyesy uses 100-sample buffers, so we downsample if needed.
         """
         if isinstance(audio_data, list) and len(audio_data) > 0:
+            self.etc._file_audio_received = True
             buffer_size = 100  # Match real Eyesy buffer size
 
             # Convert from 0-255 (128 = silence) to signed range
@@ -377,6 +396,10 @@ class EyesyEngine:
         self.etc.audio_type = audio_type
         self.etc.audio_level = max(0.0, min(1.0, level))
         self.etc.audio_frequency = frequency
+
+        # Reset file audio tracking when switching modes
+        if audio_type == 'file':
+            self.etc._file_audio_received = False
 
         buffer_size = 100  # Match real Eyesy buffer size
 

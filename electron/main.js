@@ -335,6 +335,15 @@ function createWindow(port) {
         mainWindow = null;
     });
 
+    // Detect renderer process crashes
+    mainWindow.webContents.on('render-process-gone', (event, details) => {
+        console.error('Renderer process gone:', details.reason, details.exitCode);
+    });
+
+    mainWindow.webContents.on('crashed', (event) => {
+        console.error('Renderer crashed');
+    });
+
     // Open external links in browser
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
         shell.openExternal(url);
