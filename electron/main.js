@@ -5,7 +5,7 @@ const net = require('net');
 const http = require('http');
 const crypto = require('crypto');
 const Store = require('electron-store');
-const TelemetryDeck = require('@telemetrydeck/sdk').default;
+const TelemetryDeck = require('@telemetrydeck/sdk');
 
 const store = new Store({
     defaults: {
