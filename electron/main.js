@@ -1,14 +1,17 @@
-const { app, BrowserWindow, Menu, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, shell, ipcMain } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const net = require('net');
 const http = require('http');
+const crypto = require('crypto');
 const Store = require('electron-store');
+const TelemetryDeck = require('@telemetrydeck/sdk').default;
 
 const store = new Store({
     defaults: {
         modesDir: null,
-        windowBounds: { width: 1400, height: 900 }
+        windowBounds: { width: 1400, height: 900 },
+        telemetryUserId: null
     }
 });
 
@@ -17,6 +20,45 @@ const isDev = process.env.ELECTRON_DEV === '1';
 let mainWindow = null;
 let pythonProcess = null;
 let serverPort = null;
+
+// ─── Telemetry ────────────────────────────────────────────────────────────────
+
+// Generate or retrieve a persistent anonymous user ID
+function getTelemetryUserId() {
+    let userId = store.get('telemetryUserId');
+    if (!userId) {
+        userId = crypto.randomUUID();
+        store.set('telemetryUserId', userId);
+    }
+    return userId;
+}
+
+const td = new TelemetryDeck({
+    appID: 'A0A52C82-D7ED-4F4E-8320-064E719AFCA9',
+    clientUser: getTelemetryUserId(),
+    subtleCrypto: crypto.webcrypto.subtle,
+    testMode: isDev
+});
+
+function sendSignal(type, payload = {}) {
+    try {
+        td.signal(type, {
+            platform: process.platform,
+            arch: process.arch,
+            electronVersion: process.versions.electron,
+            appVersion: app.getVersion(),
+            ...payload
+        });
+    } catch (e) {
+        // Telemetry should never break the app
+        console.error('Telemetry error:', e.message);
+    }
+}
+
+// Listen for telemetry signals from the renderer process
+ipcMain.on('telemetry', (_event, type, payload) => {
+    sendSignal(type, payload || {});
+});
 
 // ─── Path Resolution ───────────────────────────────────────────────────────────
 
@@ -226,6 +268,7 @@ async function changeModesFolderAndNotify() {
                 req.end();
             });
             console.log(`Modes directory updated to: ${newPath} (status: ${res})`);
+            sendSignal('ModesFolder.changed');
         } catch (err) {
             console.error('Failed to notify backend of modes dir change:', err);
         }
@@ -361,6 +404,7 @@ app.isQuitting = false;
 
 app.on('before-quit', () => {
     app.isQuitting = true;
+    sendSignal('App.quit');
     stopPythonServer();
 });
 
@@ -406,6 +450,9 @@ app.whenReady().then(async () => {
 
         // Step 6: Create the window
         createWindow(serverPort);
+
+        // Step 7: Send app launched telemetry
+        sendSignal('App.launched');
 
     } catch (err) {
         console.error('Startup error:', err);

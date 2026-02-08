@@ -1,7 +1,10 @@
-const { contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
-// Expose minimal platform info to the renderer
+// Expose minimal platform info and telemetry to the renderer
 contextBridge.exposeInMainWorld('electronAPI', {
     platform: process.platform,
-    isElectron: true
+    isElectron: true,
+    sendTelemetry: (type, payload) => {
+        ipcRenderer.send('telemetry', type, payload);
+    }
 });

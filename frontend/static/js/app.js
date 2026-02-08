@@ -1,5 +1,16 @@
 // Eyesy Python Simulator Frontend
 
+// Telemetry helper — sends signals via Electron IPC when available, no-ops in browser
+function trackEvent(type, payload) {
+    try {
+        if (window.electronAPI && window.electronAPI.sendTelemetry) {
+            window.electronAPI.sendTelemetry(type, payload || {});
+        }
+    } catch (e) {
+        // Telemetry should never break the app
+    }
+}
+
 class EyesySimulator {
     constructor() {
         this.socket = null;
@@ -152,6 +163,7 @@ class EyesySimulator {
         if (helpLink && helpPanel) {
             helpLink.addEventListener('click', (e) => {
                 e.preventDefault();
+                trackEvent('Panel.helpOpened');
                 helpPanel.classList.add('open');
             });
 
@@ -175,6 +187,7 @@ class EyesySimulator {
         if (aboutLink && aboutPanel) {
             aboutLink.addEventListener('click', (e) => {
                 e.preventDefault();
+                trackEvent('Panel.aboutOpened');
                 aboutPanel.classList.add('open');
             });
 
@@ -370,6 +383,8 @@ class EyesySimulator {
             // For beat mode, we stream a real audio file, so tell backend to use 'file' mode
             // This ensures the backend uses our streamed audio data instead of synthesizing its own
             const backendType = (audioType === 'beat') ? 'file' : audioType;
+
+            trackEvent('Audio.settingsApplied', { audioType: audioType });
 
             this.socket.emit('set_audio', {
                 type: backendType,
@@ -752,6 +767,7 @@ class EyesySimulator {
 
     startRendering() {
         if (this.socket && this.socket.connected) {
+            trackEvent('Rendering.started');
             this.socket.emit('start_rendering');
             // Button state will be updated by rendering_state event from server
         }
@@ -759,6 +775,7 @@ class EyesySimulator {
 
     stopRendering() {
         if (this.socket && this.socket.connected) {
+            trackEvent('Rendering.stopped');
             this.socket.emit('stop_rendering');
             // Button state will be updated by rendering_state event from server
         }
@@ -776,6 +793,7 @@ class EyesySimulator {
 
         if (this.socket && this.socket.connected) {
             console.log('Emitting load_mode event with path:', selectedMode);
+            trackEvent('Mode.loaded', { modeName: selectedMode });
             this.socket.emit('load_mode', {
                 path: selectedMode
             });
@@ -891,6 +909,7 @@ class EyesySimulator {
 
     uploadModeContent(filename, content) {
         if (this.socket && this.socket.connected) {
+            trackEvent('Mode.uploadedFromFile');
             this.socket.emit('load_mode_content', {
                 filename: filename,
                 content: content
