@@ -115,12 +115,10 @@ function startPythonServer(port, modesDir) {
         PYTHONUNBUFFERED: '1'
     };
 
-    // In dev mode, ensure the backend directory is in the Python path
-    if (isDev) {
-        const backendDir = path.dirname(backendPath);
-        const projectDir = path.join(backendDir, '..');
-        env.PYTHONPATH = [backendDir, projectDir, env.PYTHONPATH].filter(Boolean).join(path.delimiter);
-    }
+    // Ensure the backend directory is in the Python path so eyesy_engine and config can be imported
+    const backendDir = path.dirname(backendPath);
+    const projectDir = path.join(backendDir, '..');
+    env.PYTHONPATH = [backendDir, projectDir, env.PYTHONPATH].filter(Boolean).join(path.delimiter);
 
     const args = [
         backendPath,

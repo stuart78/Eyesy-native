@@ -437,17 +437,17 @@ class EyesySimulator {
 
     stopAudioPlayback() {
         if (this.audioOscillator) {
-            this.audioOscillator.stop();
-            this.audioOscillator.disconnect();
+            try { this.audioOscillator.stop(); } catch (e) { /* already stopped */ }
+            try { this.audioOscillator.disconnect(); } catch (e) {}
             this.audioOscillator = null;
         }
         if (this.audioGain) {
-            this.audioGain.disconnect();
+            try { this.audioGain.disconnect(); } catch (e) {}
             this.audioGain = null;
         }
         if (this.noiseNode) {
-            this.noiseNode.stop();
-            this.noiseNode.disconnect();
+            try { this.noiseNode.stop(); } catch (e) { /* already stopped */ }
+            try { this.noiseNode.disconnect(); } catch (e) {}
             this.noiseNode = null;
         }
         if (this.beatInterval) {
@@ -455,16 +455,16 @@ class EyesySimulator {
             this.beatInterval = null;
         }
         if (this.beatGainNode) {
-            this.beatGainNode.disconnect();
+            try { this.beatGainNode.disconnect(); } catch (e) {}
             this.beatGainNode = null;
         }
         if (this.audioFileSource) {
-            this.audioFileSource.stop();
-            this.audioFileSource.disconnect();
+            try { this.audioFileSource.stop(); } catch (e) { /* already stopped */ }
+            try { this.audioFileSource.disconnect(); } catch (e) {}
             this.audioFileSource = null;
         }
         if (this.audioAnalyser) {
-            this.audioAnalyser.disconnect();
+            try { this.audioAnalyser.disconnect(); } catch (e) {}
             this.audioAnalyser = null;
         }
         if (this.audioDataInterval) {
@@ -472,12 +472,14 @@ class EyesySimulator {
             this.audioDataInterval = null;
         }
         if (this.audioStreamElement) {
-            this.audioStreamElement.pause();
-            this.audioStreamElement.src = '';
+            try {
+                this.audioStreamElement.pause();
+                this.audioStreamElement.src = '';
+            } catch (e) {}
             this.audioStreamElement = null;
         }
         if (this.audioStreamSource) {
-            this.audioStreamSource.disconnect();
+            try { this.audioStreamSource.disconnect(); } catch (e) {}
             this.audioStreamSource = null;
         }
         this.isAudioPlaying = false;
@@ -511,6 +513,12 @@ class EyesySimulator {
             const arrayBuffer = await response.arrayBuffer();
             const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
 
+            // Check if audio was stopped/changed while we were loading
+            if (!this.audioAnalyser || !this.audioGain) {
+                console.log('Beat sample loaded but audio context was cleaned up, skipping');
+                return;
+            }
+
             // Create looping buffer source
             this.audioFileSource = ctx.createBufferSource();
             this.audioFileSource.buffer = audioBuffer;
@@ -542,7 +550,13 @@ class EyesySimulator {
             return;
         }
 
-        this.initAudioContext();
+        try {
+            this.initAudioContext();
+        } catch (e) {
+            console.error('Failed to initialize AudioContext:', e);
+            this.setStatus('Audio playback unavailable', 'error');
+            return;
+        }
         const ctx = this.audioContext;
 
         // Create gain node for volume control
@@ -695,6 +709,11 @@ class EyesySimulator {
         // Stop any existing stream
         if (this.audioDataInterval) {
             clearInterval(this.audioDataInterval);
+        }
+
+        if (!this.audioAnalyser) {
+            console.warn('startAudioDataStream called without audioAnalyser');
+            return;
         }
 
         // Send audio data to backend at ~30fps (matching render rate)

@@ -312,14 +312,14 @@ class EyesyEngine:
             # Render frame
             self.draw_func(self.screen, self.etc)
 
-            # Convert to base64 image
+            # Convert to base64 image (JPEG is ~10x faster than PNG for 1280x720)
             img = self.screen.get_image()
             buffer = BytesIO()
-            img.save(buffer, format='PNG')
+            img.save(buffer, format='JPEG', quality=85)
             img_data = buffer.getvalue()
             img_base64 = base64.b64encode(img_data).decode('utf-8')
 
-            return f"data:image/png;base64,{img_base64}", None
+            return f"data:image/jpeg;base64,{img_base64}", None
 
         except Exception as e:
             error_msg = f"Error rendering frame: {str(e)}\n{traceback.format_exc()}"

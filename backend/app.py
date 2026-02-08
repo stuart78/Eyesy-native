@@ -50,8 +50,8 @@ app = Flask(__name__,
 config_name = 'production' if IS_ELECTRON else os.environ.get('FLASK_ENV', 'development')
 app.config.from_object(config[config_name])
 
-cors_origins = "http://127.0.0.1:*" if IS_ELECTRON else "*"
-socketio = SocketIO(app, cors_allowed_origins=cors_origins, async_mode='threading')
+# Electron binds to 127.0.0.1 only, so "*" is safe (no external access)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Global engine instance
 engine = EyesyEngine()
@@ -373,10 +373,10 @@ if __name__ == '__main__':
 
     print("Starting Eyesy Python Simulator...")
 
-    # In Electron mode, always run without debug
+    # In Electron mode, run without debug but allow Werkzeug (it's a local desktop app)
     if IS_ELECTRON:
         print(f"Electron mode: http://127.0.0.1:{args.port}")
-        socketio.run(app, host=args.host, port=args.port, debug=False)
+        socketio.run(app, host=args.host, port=args.port, debug=False, allow_unsafe_werkzeug=True)
     elif app.config['DEBUG']:
         print(f"Development mode: http://localhost:{args.port}")
         socketio.run(app, host=args.host, port=args.port, debug=True, allow_unsafe_werkzeug=True)
