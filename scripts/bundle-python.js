@@ -35,7 +35,10 @@ function getPlatformKey() {
     let arch = process.arch;
 
     for (let i = 0; i < args.length; i++) {
-        if (args[i] === '--platform') platform = args[i + 1] === 'mac' ? 'darwin' : args[i + 1];
+        if (args[i] === '--platform') {
+            const val = args[i + 1];
+            platform = val === 'mac' ? 'darwin' : val === 'win' ? 'win32' : val;
+        }
         if (args[i] === '--arch') arch = args[i + 1];
     }
 
@@ -128,9 +131,54 @@ async function main() {
 
     // Install pip dependencies
     console.log('\nInstalling Python dependencies...');
+    const isCrossBuild = isWindows !== (process.platform === 'win32');
+
     try {
-        execSync(`"${pythonBin}" -m pip install --upgrade pip`, { stdio: 'inherit' });
-        execSync(`"${pythonBin}" -m pip install -r "${REQUIREMENTS}"`, { stdio: 'inherit' });
+        if (isCrossBuild) {
+            // Cross-compilation: can't run the target python binary on this OS
+            // Use host python to download platform-specific wheels, then extract them
+            console.log('Cross-platform build detected - using pip download for target platform...');
+
+            // Determine target site-packages path
+            const sitePackages = isWindows
+                ? path.join(OUTPUT_DIR, 'Lib', 'site-packages')
+                : path.join(OUTPUT_DIR, 'lib', `python${PYTHON_VERSION.split('.').slice(0, 2).join('.')}`, 'site-packages');
+
+            fs.mkdirSync(sitePackages, { recursive: true });
+
+            // Determine pip platform tag for the target
+            const pipPlatform = isWindows ? 'win_amd64' : 'manylinux2014_x86_64';
+            const pyVer = PYTHON_VERSION.split('.').slice(0, 2).join('.');
+
+            // Use host python3 to download ALL wheels (including deps) for the target platform
+            const tmpWheelDir = path.join(OUTPUT_DIR, '_wheels');
+            fs.mkdirSync(tmpWheelDir, { recursive: true });
+
+            execSync(
+                `python3 -m pip download -r "${REQUIREMENTS}" ` +
+                `--dest "${tmpWheelDir}" ` +
+                `--platform ${pipPlatform} ` +
+                `--python-version ${pyVer} ` +
+                `--implementation cp ` +
+                `--only-binary=:all:`,
+                { stdio: 'inherit' }
+            );
+
+            // Extract all .whl files (they're just zip files) into site-packages
+            console.log(`\nExtracting wheels into ${sitePackages}...`);
+            const wheels = fs.readdirSync(tmpWheelDir).filter(f => f.endsWith('.whl'));
+            for (const whl of wheels) {
+                console.log(`  Extracting: ${whl}`);
+                execSync(`unzip -qo "${path.join(tmpWheelDir, whl)}" -d "${sitePackages}"`, { stdio: 'inherit' });
+            }
+
+            // Clean up wheel cache
+            fs.rmSync(tmpWheelDir, { recursive: true, force: true });
+        } else {
+            // Native build: can run the bundled python directly
+            execSync(`"${pythonBin}" -m pip install --upgrade pip`, { stdio: 'inherit' });
+            execSync(`"${pythonBin}" -m pip install -r "${REQUIREMENTS}"`, { stdio: 'inherit' });
+        }
     } catch (err) {
         console.error('Failed to install dependencies:', err.message);
         process.exit(1);
