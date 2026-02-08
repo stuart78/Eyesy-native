@@ -3,32 +3,55 @@ Flask app for Eyesy Python Simulator
 """
 
 import os
+import sys
 import time
+import argparse
 import threading
-from flask import Flask, render_template, request, Response
+from flask import Flask, render_template, request, Response, jsonify
 import requests
 from flask_socketio import SocketIO, emit
 from eyesy_engine import EyesyEngine
 
 # Import configuration
-import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from config import config
 
-# Get project root directory (parent of backend/)
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# ─── Path Resolution ────────────────────────────────────────────────────────────
+# Detect if running inside a packaged Electron app
+IS_ELECTRON = os.environ.get('ELECTRON_APP') == '1'
+
+def resolve_project_root():
+    """Resolve the project root, accounting for Electron packaging."""
+    if IS_ELECTRON:
+        # When packaged, resources are in process.resourcesPath
+        # The backend/ dir is at <resourcesPath>/backend/
+        # So project root equivalent is <resourcesPath>/
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        return os.path.dirname(backend_dir)
+    else:
+        # Standard dev: project root is parent of backend/
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+PROJECT_ROOT = resolve_project_root()
+
+# Default modes dir - can be overridden by --modes-dir CLI arg
 MODES_DIR = os.path.join(PROJECT_ROOT, 'modes')
 
+# Resolve template and static paths
+TEMPLATE_DIR = os.path.join(PROJECT_ROOT, 'frontend', 'templates')
+STATIC_DIR = os.path.join(PROJECT_ROOT, 'frontend', 'static')
+
 app = Flask(__name__,
-    template_folder='../frontend/templates',
-    static_folder='../frontend/static'
+    template_folder=TEMPLATE_DIR,
+    static_folder=STATIC_DIR
 )
 
 # Configure app based on environment
-config_name = os.environ.get('FLASK_ENV', 'development')
+config_name = 'production' if IS_ELECTRON else os.environ.get('FLASK_ENV', 'development')
 app.config.from_object(config[config_name])
 
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+cors_origins = "http://127.0.0.1:*" if IS_ELECTRON else "*"
+socketio = SocketIO(app, cors_allowed_origins=cors_origins, async_mode='threading')
 
 # Global engine instance
 engine = EyesyEngine()
@@ -39,6 +62,32 @@ render_thread = None
 def index():
     """Serve the main interface"""
     return render_template('index.html')
+
+@app.route('/health')
+def health():
+    """Health check endpoint for Electron startup polling"""
+    return jsonify({'status': 'ok'}), 200
+
+@app.route('/set-modes-dir', methods=['POST'])
+def set_modes_dir():
+    """Update the modes directory at runtime (called from Electron menu)"""
+    global MODES_DIR
+    data = request.get_json()
+    new_dir = data.get('modes_dir')
+    if new_dir and os.path.isdir(new_dir):
+        MODES_DIR = new_dir
+        print(f"Modes directory updated to: {MODES_DIR}")
+        # Notify connected clients to refresh their mode list
+        socketio.emit('status', {'message': f'Modes folder changed to: {os.path.basename(MODES_DIR)}', 'type': 'success'})
+        # Automatically send updated modes list
+        modes = []
+        for item in os.listdir(MODES_DIR):
+            mode_path = os.path.join(MODES_DIR, item)
+            if os.path.isdir(mode_path) and os.path.exists(os.path.join(mode_path, 'main.py')):
+                modes.append({'name': item, 'path': item})
+        socketio.emit('modes_list', {'modes': modes})
+        return jsonify({'status': 'ok'}), 200
+    return jsonify({'status': 'error', 'message': 'Invalid directory'}), 400
 
 @socketio.on('connect')
 def handle_connect():
@@ -256,6 +305,8 @@ def render_loop():
     target_fps = 30
     frame_time = 1.0 / target_fps
     frame_count = 0
+    error_count = 0
+    max_consecutive_errors = 10
 
     print("Render loop started")
 
@@ -269,17 +320,26 @@ def render_loop():
             if image_data:
                 socketio.emit('frame', {'image': image_data})
                 frame_count += 1
+                error_count = 0  # Reset error count on success
                 if frame_count % 30 == 0:
                     print(f"Rendered {frame_count} frames")
             elif error:
-                print(f"Render error: {error}")
-                socketio.emit('status', {'message': error, 'type': 'error'})
-                is_running = False
+                error_count += 1
+                print(f"Render error ({error_count}): {error}")
+                if error_count >= max_consecutive_errors:
+                    print(f"Too many consecutive errors, stopping render loop")
+                    socketio.emit('status', {'message': f'Stopped after {max_consecutive_errors} errors: {error}', 'type': 'error'})
+                    is_running = False
 
         except Exception as e:
-            print(f"Exception in render loop: {e}")
-            socketio.emit('status', {'message': f'Render error: {str(e)}', 'type': 'error'})
-            is_running = False
+            error_count += 1
+            print(f"Exception in render loop ({error_count}): {e}")
+            import traceback
+            traceback.print_exc()
+            if error_count >= max_consecutive_errors:
+                print(f"Too many consecutive exceptions, stopping render loop")
+                socketio.emit('status', {'message': f'Render error: {str(e)}', 'type': 'error'})
+                is_running = False
 
         # Maintain target FPS
         elapsed = time.time() - start_time
@@ -297,14 +357,29 @@ def create_app(config_name=None):
     return app
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='EYESY Python Simulator')
+    parser.add_argument('--port', type=int, default=int(os.environ.get('PORT', 5001)),
+                        help='Port to run the server on')
+    parser.add_argument('--host', type=str, default=os.environ.get('HOST', '0.0.0.0'),
+                        help='Host to bind to')
+    parser.add_argument('--modes-dir', type=str, default=None,
+                        help='Path to the EYESY modes directory')
+    args = parser.parse_args()
+
+    # Override modes directory if provided
+    if args.modes_dir and os.path.isdir(args.modes_dir):
+        MODES_DIR = args.modes_dir
+        print(f"Using modes directory: {MODES_DIR}")
+
     print("Starting Eyesy Python Simulator...")
 
-    port = int(os.environ.get('PORT', 5001))
-    host = os.environ.get('HOST', '0.0.0.0')
-
-    if app.config['DEBUG']:
-        print(f"Development mode: http://localhost:{port}")
-        socketio.run(app, host=host, port=port, debug=True, allow_unsafe_werkzeug=True)
+    # In Electron mode, always run without debug
+    if IS_ELECTRON:
+        print(f"Electron mode: http://127.0.0.1:{args.port}")
+        socketio.run(app, host=args.host, port=args.port, debug=False)
+    elif app.config['DEBUG']:
+        print(f"Development mode: http://localhost:{args.port}")
+        socketio.run(app, host=args.host, port=args.port, debug=True, allow_unsafe_werkzeug=True)
     else:
-        print(f"Production mode: http://{host}:{port}")
-        socketio.run(app, host=host, port=port, debug=False)
+        print(f"Production mode: http://{args.host}:{args.port}")
+        socketio.run(app, host=args.host, port=args.port, debug=False)

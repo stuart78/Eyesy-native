@@ -1,0 +1,71 @@
+{
+  "name": "eyesy-simulator",
+  "version": "1.0.0",
+  "description": "Desktop simulator for the Critter & Guitari EYESY video synthesizer",
+  "main": "main.js",
+  "author": "Stuart Frederich-Smith",
+  "license": "All Rights Reserved",
+  "scripts": {
+    "dev": "ELECTRON_DEV=1 electron .",
+    "dev:win": "set ELECTRON_DEV=1 && electron .",
+    "build:python": "node ../scripts/bundle-python.js",
+    "build:mac": "npm run build:python && electron-builder --mac",
+    "build:win": "npm run build:python && electron-builder --win",
+    "build": "npm run build:python && electron-builder --mac --win"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.signalfunctionset.eyesy-simulator",
+    "productName": "EYESY Simulator",
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": ["**/*.py"]
+      },
+      {
+        "from": "../frontend",
+        "to": "frontend"
+      },
+      {
+        "from": "../modes",
+        "to": "modes",
+        "filter": ["**/*.py", "**/*.png", "**/*.jpg", "**/*.json"]
+      },
+      {
+        "from": "python",
+        "to": "python"
+      },
+      {
+        "from": "../config.py",
+        "to": "config.py"
+      },
+      {
+        "from": "../requirements-electron.txt",
+        "to": "requirements-electron.txt"
+      }
+    ],
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.music",
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "target": ["nsis"],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

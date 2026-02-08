@@ -1,3 +1,40 @@
+/* Locally bundled League Spartan fonts */
+@font-face {
+    font-family: 'League Spartan';
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url('../fonts/LeagueSpartan-300.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'League Spartan';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/LeagueSpartan-400.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'League Spartan';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('../fonts/LeagueSpartan-500.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'League Spartan';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('../fonts/LeagueSpartan-600.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'League Spartan';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../fonts/LeagueSpartan-700.ttf') format('truetype');
+}
+
 body {
     margin: 0;
     padding: 20px;
@@ -16,6 +53,13 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
+    -webkit-app-region: drag; /* Allow window dragging from title bar (Electron/macOS) */
+}
+
+.top-bar a,
+.top-bar button,
+.top-nav {
+    -webkit-app-region: no-drag; /* Keep interactive elements clickable */
 }
 
 .top-bar h1 {

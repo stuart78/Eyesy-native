@@ -4,7 +4,9 @@ __pycache__/
 *$py.class
 *.so
 .Python
+# Python build artifacts (not electron/build/)
 build/
+!electron/build/
 develop-eggs/
 dist/
 downloads/
@@ -67,3 +69,12 @@ ssl/
 
 # Docker
 .dockerignore
+
+# Electron
+electron/node_modules/
+electron/dist/
+electron/python/
+electron/out/
+
+# Mode archives (keep source dirs, not zips)
+modes/*.zip
