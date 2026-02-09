@@ -1,218 +1,48 @@
-# EYESY Simulator
+## EYESY Simulator v1.0.0
 
-A web-based simulator for the [Critter & Guitari EYESY](https://www.critterandguitari.com/eyesy) video synthesizer that runs actual Python scripts locally.
+A native desktop app for developing and previewing [Critter & Guitari EYESY](https://www.critterandguitari.com/eyesy) video synthesizer modes without the hardware.
 
-**Version 1.0** | Created by Stuart Frederich-Smith | [signalfunctionset.com](https://signalfunctionset.com)
+This project is not affiliated with Critter & Guitari. I built this to aid my own mode development. 
 
-![EYESY Simulator Preview](preview.jpeg)
+### Downloads
 
-## Features
+| Platform | File |
+|----------|------|
+| **macOS** (Apple Silicon) | `EYESY Simulator-1.0.0-arm64.dmg` |
+| **Windows** (x64) | `EYESY Simulator Setup 1.0.0.exe` |
 
-### Core Simulator
-- Flask server with WebSocket (flask-socketio) for real-time communication
-- pygame compatibility shim that renders to PIL images
-- Eyesy script executor that runs actual main.py files
-- Real-time WebSocket streaming of canvas frames at 30 FPS
-- Web UI with 5 knob controls and mode selector
-- File browser for loading external Python files
-- Full Eyesy hardware API compatibility
+### What is this?
 
-### Audio Simulation
-- Multiple audio types: Silence, Sine Wave, White Noise, Beat/Kick, Audio File
-- Audio level and frequency controls
-- "Play in browser" toggle to hear audio
-- Audio file upload and playback with Web Audio API
-- Real-time audio data streaming to backend via WebSocket
-- Internet radio streaming with preset stations (SomaFM)
-- Audio analyser for waveform extraction
+EYESY Simulator runs real EYESY Python/pygame scripts on your computer, rendering visuals in real-time. Write, test, and iterate on modes without needing the physical hardware.
 
-### pygame Shim
-The simulator includes a pygame compatibility layer supporting:
-- `pygame.draw.circle()`, `rect()`, `line()`, `polygon()`, `ellipse()`, `arc()`
-- `pygame.draw.lines()` for connected line segments
-- `Surface.fill()`, `get_size()`, `blit()`, `get_width()`, `get_height()`, `get_rect()`
-- `Surface.convert_alpha()` for alpha channel support
-- `pygame.font.Font` and `pygame.font.SysFont` for text rendering
-- `Rect` class with position and size attributes
+### Features
 
-### UI/UX
-- Clean, modern interface with League Spartan font
-- Collapsible Controls panel
-- Preview panel with 16:9 aspect ratio maintained
-- Preview size indicator showing actual canvas dimensions
-- Auto-apply audio settings when sliders change during playback
-- Play/Pause button for audio simulation control
-- About and Help slide-in panels with documentation
+- **Run real EYESY modes** — Point the app at any folder of EYESY modes and load `main.py` scripts directly
+- **Full pygame drawing support** — `circle`, `rect`, `line`, `polygon`, `ellipse`, `arc`, `lines`, `Surface.fill`, `blit`, font rendering, and more
+- **5 interactive knobs** — Real-time parameter control (0.0–1.0), just like the hardware
+- **Audio simulation** — Choose from silence, sine wave, white noise, beat/kick, internet radio or load your own audio file
+- **Audio-reactive visuals** — `etc.audio_in`, `etc.audio_left`, `etc.audio_right`, and `etc.audio_trig` all work
+- **1280×720 canvas** — Matches EYESY's native resolution with 16:9 aspect ratio maintained
+- **No Python install required** — Python 3.11 runtime is bundled with the app
 
-## Quick Start
+### Getting Started
 
-1. **Install dependencies:**
-   ```bash
-   cd eyesy_sim
-   python3 -m venv venv
-   source venv/bin/activate  # or `venv\Scripts\activate` on Windows
-   pip install -r requirements.txt
-   ```
+1. Download and install for your platform
+2. Launch the app and select your EYESY modes folder
+3. Pick a mode from the dropdown and hit Start
+4. Adjust knobs and audio settings in real-time
 
-2. **Run the simulator:**
-   ```bash
-   source venv/bin/activate
-   python backend/app.py
-   ```
+Modes are available from the [EYESY Modes GitHub repo](https://github.com/critterandguitari/EYESY_Modes_Pygame) and [Patch Storage](https://patchstorage.com/platform/eyesy/).
 
-3. **Open in browser:**
-   ```
-   http://localhost:5001
-   ```
+### Hardware Compatibility
 
-## How to Use
+Modes written and tested in the simulator are compatible with real EYESY hardware. For best compatibility, make sure your modes:
+- Use `etc.knob1`–`etc.knob5` (not bare globals)
+- Include `import pygame` at the top
 
-1. **Select a mode** from the dropdown
-2. **Click "Load Mode"** to load the Python script
-3. **Click "Start"** to begin rendering
-4. **Adjust the 5 knobs** to control the visuals in real-time
-5. **Configure audio** using the Audio controls section
-6. **Click the play button** next to "Audio" to start audio simulation
-7. **Click "Stop"** to stop rendering
+Note that the actual EYESY hardware may be much more resource constrained than your development device. The simulator does not attempt to simulate hardware limitations, so you may get better frame rate in dev than you will on the actual EYESY. I would suggest testing early and often on the actual EYESY if you are building anything complex (learned from experience). 
 
-## Example Modes Included
+### System Requirements
 
-- **S-Simple-Circle**: Basic circle controlled by knobs (position, size, color)
-- **S-Spiral**: Animated spiral with color cycling
-- **S-Scope**: Audio waveform visualization (oscilloscope style)
-- **S-String-Vibration**: String vibration visualization responding to audio
-- **S-Living-Grid**: Dynamic grid pattern
-- **T-Flash**: Trigger mode that flashes on audio triggers or when knob 5 > 0.8
-
-## Eyesy API Reference
-
-The simulator supports the full Eyesy hardware API:
-
-### Knob Values
-```python
-# Always use etc.knob1-5 for hardware compatibility
-x = int(etc.knob1 * 1280)
-color_intensity = etc.knob4 * 255
-```
-
-### Audio Data
-```python
-etc.audio_in      # Mono audio buffer (100 samples)
-etc.audio_left    # Left channel
-etc.audio_right   # Right channel
-etc.audio_peak    # Peak audio level (0.0 to 1.0)
-etc.audio_trig    # Audio trigger boolean
-etc.trig          # Alias for audio_trig
-```
-
-### Screen Properties
-```python
-screen            # pygame Surface object (1280x720)
-etc.xres          # Screen width (1280)
-etc.yres          # Screen height (720)
-```
-
-### Color Functions
-```python
-etc.color_picker(value)     # Returns RGB tuple for value 0.0-1.0
-etc.color_picker_bg(value)  # Background color picker
-etc.color_picker_fg(value)  # Foreground color picker
-```
-
-### Other Properties
-```python
-etc.mode          # Current mode name
-etc.bg_color      # Current background color
-etc.fg_color      # Current foreground color
-etc.auto_clear    # Whether screen auto-clears between frames
-etc.midi_note_new # True when new MIDI note received
-etc.midi_note     # Last MIDI note number (0-127)
-etc.midi_velocity # Last MIDI velocity (0-127)
-```
-
-## Writing Modes
-
-Create a new directory in `modes/` with a `main.py` file:
-
-```python
-import pygame  # Required for hardware compatibility
-
-def setup(screen, etc):
-    """Called once when mode loads"""
-    pass
-
-def draw(screen, etc):
-    """Called every frame"""
-    screen.fill((0, 0, 0))  # Clear screen
-
-    # Use etc.knob values (hardware compatible)
-    x = int(etc.knob1 * 1280)
-    y = int(etc.knob2 * 720)
-    radius = int(etc.knob3 * 100) + 10
-    color = etc.color_picker(etc.knob4)
-
-    # Respond to audio
-    if etc.audio_trig:
-        radius *= 2
-
-    # Draw with pygame
-    pygame.draw.circle(screen, color, (x, y), radius)
-```
-
-### Important: Hardware Compatibility
-
-Always use `etc.knob1` through `etc.knob5` instead of bare globals:
-
-```python
-# CORRECT - works on real Eyesy hardware AND simulator
-x = int(etc.knob1 * 1280)
-
-# WRONG - only works in simulator, fails on real hardware
-x = int(knob1 * 1280)
-```
-
-Always import pygame at the top of your mode:
-
-```python
-import pygame  # Required for real hardware
-```
-
-## Project Structure
-
-```
-eyesy_sim/
-├── backend/
-│   ├── app.py              # Flask app with WebSocket (port 5001)
-│   ├── eyesy_engine.py     # Core Eyesy execution engine
-│   ├── pygame_shim.py      # pygame compatibility layer (PIL-based)
-│   └── audio_processor.py  # Audio input simulation
-├── frontend/
-│   ├── static/
-│   │   ├── css/style.css   # UI styling
-│   │   ├── js/app.js       # WebSocket client, audio playback
-│   │   └── audio/          # Built-in audio samples
-│   └── templates/
-│       └── index.html      # Main UI
-├── modes/
-│   ├── S-Simple-Circle/main.py
-│   ├── S-Spiral/main.py
-│   ├── S-Scope/main.py
-│   ├── S-String-Vibration/main.py
-│   ├── S-Living-Grid/main.py
-│   └── T-Flash/main.py
-├── config.py               # Server configuration
-├── requirements.txt
-├── README.md
-└── CLAUDE.md               # Development documentation
-```
-
-## Resources
-
-- [EYESY Manual](https://critterandguitari.github.io/cg-docs/EYESY/)
-- [EYESY_OS GitHub](https://github.com/critterandguitari/EYESY_OS)
-- [EYESY_Modes_Pygame](https://github.com/critterandguitari/EYESY_Modes_Pygame)
-- [Community Modes on Patchstorage](https://patchstorage.com/platform/eyesy/)
-
-## License
-
-Copyright 2025 Stuart Frederich-Smith. All rights reserved.
+- **macOS**: Apple Silicon (M1/M2/M3/M4), macOS 10.15+
+- **Windows**: 64-bit, Windows 10+
